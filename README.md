@@ -17,7 +17,7 @@
 <br>
 [4] Rural Federal University of Pernambuco (UFRP)
 <br>
-[5] Institute of Systems and Robotics, University of Coimbra (UC),
+[5] Institute of Systems and Robotics, University of Coimbra (ISR-UC),
 <br>
 [6] Portuguese Mint and Official Printing Office (INCM)
 
