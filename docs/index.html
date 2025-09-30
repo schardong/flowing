@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<html>
+
+<link href='https://fonts.googleapis.com/css?family=Titillium+Web:400,600,400italic,600italic,300,300italic' rel='stylesheet' type='text/css'>
+<head>
+    <title>FLOWING &#127754: Implicit Neural Flows for Structure-Preserving Morphings</title>
+    <meta property="og:description" content="Preaching-AI"/>
+    <meta property="og:image" itemprop="image" content="https://dsilvavinicius.github.io/nise/assets/representative.jpg">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Icons" rel="stylesheet">
+    <link rel='stylesheet' type='text/css' href='styles.css'/>
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:creator" content="@SchardongG">
+    <meta name="twitter:title" content="FLOWING &#127754: Implicit Neural Flows for Structure-Preserving Morphing">
+    <meta name="twitter:description" content="FLOWING is a novel method to create morphing between two graphical objects.">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+
+<script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
+<body>
+<div class="container">
+    <div class="paper-title">
+      <h1>FLOWING &#127754: Implicit Neural Flows <br/> for Structure-Preserving Morphing</h1>
+    </div>
+
+    <div id="authors">
+      <div class="author-row">
+        <div class="col-5 text-center"><a href="">Arthur Bizzi</a><sup>1</sup></div>
+        <div class="col-5 text-center"><a href="https://www.linkedin.com/in/mgp123/">Matias Portnoy</a><sup>2</sup></div>
+        <div class="col-5 text-center"><a href="">Vitor Pereira Matias</a><sup>3</sup></div>
+        <div class="col-5 text-center"><a href="https://www.linkedin.com/in/daniel-perazzo-85a0a3175/">Daniel Perazzo</a><sup>1</sup></div>
+        <div class="col-5 text-center"><a href="https://jpsml.github.io/">João Paulo Lima</a><sup>1,4</sup></div>
+        <div class="col-5 text-center"><a href="https://lvelho.impa.br/">Luiz Velho</a><sup>1</sup></div>
+        <div class="col-5 text-center"><a href="https://visteam.isr.uc.pt/team/nuno-goncalves">Nuno Gonçalves</a><sup>5,6</sup></div>
+        <div class="col-5 text-center"><a href="">João M. Pereira</a><sup>1</sup></div>
+        <div class="col-5 text-center"><a href="https://schardong.github.io/">Guilherme Schardong</a><sup>5</sup></div>
+        <div class="col-5 text-center"><a href="https://sites.google.com/site/tiagonovellodebrito">Tiago Novello</a><sup>1</sup></div>
+      </div>
+
+      <div class="affil-row">
+        <div class="col-3 text-center"><sup>1</sup>IMPA</div>
+        <div class="col-3 text-center"><sup>2</sup>UBA</div>
+        <div class="col-3 text-center"><sup>3</sup>USP</div>
+        <div class="col-3 text-center"><sup>4</sup>UFRP</div>
+        <div class="col-3 text-center"><sup>5</sup>ISR-UC</div>
+        <div class="col-3 text-center"><sup>6</sup>INCM</div>
+      </div>
+
+      <div style="clear: both">
+        <!-- <div class="paper-btn-parent"> -->
+      <!--     <a class="paper-btn" href="https://arxiv.org/abs/2308.13888"> -->
+      <!--       <span class="material-icons"> description </span> -->
+      <!--       Paper -->
+      <!--     </a> -->
+      <!--     <a class="paper-btn" href="https://github.com/schardong/flowing"> -->
+      <!--       <span class="material-icons"> code </span> -->
+      <!--       Code -->
+      <!--     </a> -->
+      <!--     <a class="paper-btn" href="#poster"> -->
+      <!--       <span class="material-icons"> image </span> -->
+      <!--       Poster -->
+      <!--     </a> -->
+      <!--   </div> -->
+      <!-- </div> -->
+    </div>
+</div>
+
+    <section id="teaser-videos">
+        <!--
+        <figure style="width: 33%; float: left">
+            <p class="caption_bold">
+                Coarse
+            </p>
+        </figure>
+
+        <figure style="width: 33%; float: left">
+            <p class="caption_bold">
+                Neural Implicit Normal Mapping
+            </p>
+        </figure>
+
+        <figure style="width: 33%; float: left">
+            <p class="caption_bold">
+                Baseline
+            </p>
+        </figure>
+        -->
+
+        <!-- <figure style="width: 50%; float: left"> -->
+        <!--   <video class="centered" width="100%" autoplay muted loop playsinline> -->
+        <!--     <source src="assets/teaser_improved_twitter.mp4" type="video/mp4"> -->
+        <!--     Your browser does not support the video tag. -->
+        <!--   </video> -->
+        <!-- </figure> -->
+        <!-- <figure style="width: 50%; float: right"> -->
+        <!--   <video class="centered" width="100%" autoplay muted loop playsinline> -->
+        <!--     <source src="assets/women_teaser.mp4" type="video/mp4"> -->
+        <!--     Your browser does not support the video tag. -->
+        <!--   </video> -->
+        <!-- </figure> -->
+
+        <!-- <figure style="width: 100%; float: left"> -->
+        <!--   <p class="caption_justify"> -->
+        <!--     Results of morphings using our approach. On the left, a morphing between an image of Yann Lecun and an image of Geoffrey Hinton, also as a tribute for all the researchers that helped establish the field. On the right, a morphing between two images in the FRLL-Morphs dataset. Our approach takes landmarks into consideration, resulting in an aligment of the most important face features during the entire morphing process. -->
+        <!--   </p> -->
+        <!-- </figure> -->
+    </section>
+
+    <section id="news">
+      <h2>News</h2>
+      <hr>
+      <div class="row" style="width: 100%;">
+        <div><span class="material-icons"> description </span> [Sep 18th 2025] Paper accepted to #NeurIPS25.</div>
+        <div><span class="material-icons"> description </span> [TBA 2025] Page online.</div>
+        <div><span class="material-icons"> description </span> [TBA 2025] ArXiv paper online.</div>
+        <div><span class="material-icons"> description </span> [TBA 2025] Source-code released.</div>
+        <br>
+      </div>
+    </section>
+
+    <section id="features" style="text-align: justify;">
+      <h2>Features</h2>
+      <hr>
+      <p>Our approach supports both images and 3D Gaussian data. Below, we show morphing between both face images and 3D Gaussian Splatting faces.</p>
+      <figure style="width: 100%; float: left">
+        <img style="width: 100%" src="assets/morphing-face.png">
+      </figure>
+      <figure style="width: 100%; float: left">
+        <img style="width: 100%" src="assets/morphing-3dgs.png">
+      </figure>
+
+      <p>Proper warping before blending may be used for better feature transfer. On the example below, we morph two pictures of Albert Einstein, one real and a sketch. Notice how the sketch's traces are more present on our morphing (third column), compared to state-of-the-art generative morphing (diffmorpher, second column)</p>
+      <figure style="width: 100%; float: left">
+        <img style="width: 100%" src="assets/morphing-einstein.png">
+      </figure>
+
+      <p>Below, we interpolate different views of the same building of the MegaDepth dataset, notice how the our method preserves the chimneys and center/rightmost antennaes (it unfortunately misses the leftmost antenna).</p>
+      <figure style="width: 100%; float: left">
+        <img style="width: 100%" src="assets/morphing-building.png">
+      </figure>
+
+    </section>
+
+    <!-- <section id="Method">
+        <h2>Method</h2>
+        <hr>
+
+        <p>To define the morphing, we disentangle the spatial deformation (warping), used to align the corresponding features along the time, from the blending of the resulting warped images. We parameterize the warping with a coordinate net and employ the thin-plate energy to force the transformations to minimize deformation. This is essential, because just applying a linear transformation may result in ghosting. See this comparison with OpenCV.</p>
+        <figure style="width: 80%; float: center">
+            <img style="width: 100%" src="assets/opencv.png">
+        </figure>
+
+        After the warping, we blend the warped target images. Our approach supports linear, Poisson, and generative blending.
+
+    </section> -->
+
+    <section id="paper">
+      <h2>Paper</h2>
+      <hr>
+      <div class="flex-row">
+        <div style="box-sizing: border-box; padding: 16px; margin: auto;">
+          <a href="https://www.visgraf.impa.br/morph/Warping_and_Morphing_of_Images_using_Neural_Networks_LR.pdf"><img class="screenshot" src="assets/paper-thumbnail.png"></a>
+        </div>
+        <div style="width: 60%">
+          <p><b>FLOWING: Implicit Neural Flows for Structure-Preserving Morphing</b></p>
+          <p>Arthur Bizzi, Matias Grynberg Portnoy, Vitor Pereira Matias, Daniel Perazzo, João Paulo Silva do Monte Lima, Luiz Velho, Nuno Gonçalves, João M. Pereira, Guilherme Schardong, Tiago Novello</p>
+          <div><span class="material-icons"> description </span><a href=""> Paper preprint (PDF)</a></div>
+          <div><span class="material-icons"> description </span><a href=""> Arxiv</a></div>
+          <div><span class="material-icons"> insert_comment </span><a href=""> BibTeX</a></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="bibtex">
+      <h2>Citation</h2>
+      <hr>
+      <code class="bibtex"><p>@inproceedings{bizzi2025flowing,<br>
+          &emsp;&emsp;title = {{FLOWING}: Implicit Neural Flows for Structure-Preserving Morphings},<br>
+          &emsp;&emsp;author = {Bizzi, Arthur and Matias, Vitor and Perazzo, Daniel and Lima, Jo\~{a}o and Velho, Luiz and<br>&emsp;&emsp; Gon\c{c}alves, Nuno and Pereira, Jo\~{a}o and Schardong, Guilherme and Novello, Tiago},<br>
+          &emsp;&emsp;booktitle={The Thirty-ninth Annual Conference on Neural Information Processing Systems},<br>
+          &emsp;&emsp;year = {2025},<br>
+          &emsp;&emsp;url={https://openreview.net/forum?id=iHXCz8c204}<br>
+          }</p>
+      </code>
+    </section>
+
+    <section id="poster">
+      <h2>Poster</h2>
+      <hr>
+      <p><b>Coming soon!</b></p>
+      <!-- <div style="width: 100%"> -->
+      <!--   <figure style="width: 100%; float: left"> -->
+      <!--     <img style="width: 100%" src="assets/nifm-poster-cvpr24.png"> -->
+      <!--   </figure> -->
+      <!-- </div> -->
+    </section>
+
+    <section id="acknowledgements">
+      <h2>Acknowledgements</h2>
+      <hr>
+      <div class="row">
+        <p>
+          The authors would like to thank Coordenação de Aperfeiçoamento de Pessoal de Nível Superior (CAPES), grants 88887.842584/2023-00 (Vitor), also Fundação de Ciência e Tecnologia (FCT) projects <a href="https://doi.org/10.54499/UIDB/00048/2020">UIDB/00048/2020</a> and UIDP/00048/2020 for funding this work. Finally, we also thank Google for funding this research.
+
+      </div>
+    </section>
+</div>
+</body>
+
+</html>
