@@ -1,0 +1,17 @@
+dlib==19.24.4
+matplotlib>=3.10.1
+numpy>=2.2.5
+nvidia-cudnn-cu11==9.8.0.87
+opencv-contrib-python>=4.11.0.86
+opencv-python>=4.11.0.86
+pandas>=2.2.3
+Pillow>=11.2.1
+PyYAML>=6.0.2
+pytorch-fid==0.3.0
+scipy>=1.15.2
+tensorboard>=2.19.0
+torch>=2.6.0
+torchdiffeq>=0.2.5
+torchvision>=0.21.0
+tqdm>=4.67.1
+

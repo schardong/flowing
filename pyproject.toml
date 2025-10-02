@@ -1,0 +1,13 @@
+[project]
+name = "conjugate-morphing"
+version = "0.1.0"
+description = "Image Morphing with Neural Conjugate Flows and NODEs"
+license = "MIT"
+readme = "README.md"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
