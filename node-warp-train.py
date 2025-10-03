@@ -18,7 +18,7 @@ from ifmorph.dataset import WarpingDataset, Warping3DDataset
 from ifmorph.loss_functions import FlowLoss, NeuralODELoss
 from ifmorph.model import NearIdSIREN
 from ifmorph.neural_odes import NeuralODE
-from ifmorph.util import create_node_morphing, get_landmark_correspondences
+from ifmorph.util import create_node_morphing, get_landmark_correspondences, get_default_argumentparser, get_device
 from tqdm import tqdm
 
 
@@ -64,27 +64,20 @@ def train_warping(experiment_config_path, output_path, args):
     with open(osp.join(output_path, "config.yaml"), "w") as fout:
         yaml.dump(config, fout)
 
-    devstr = ""
-    if args.device:
-        devstr = args.device
-    else:
-        devstr = config.get("device", "cuda:0")
-
-    if "cuda" in devstr and not torch.cuda.is_available():
-        devstr = "cpu"
-        print("No CUDA available devices found on system. Using CPU.", file=sys.stderr)
-    else:
-        torch.cuda.empty_cache()
-
-    device = torch.device(devstr)
+    device = get_device(args.device, config.get("device", "cuda:0"))
 
     initial_conditions = [(v, k) for k, v in config["initial_conditions"].items()]
+    if len(initial_conditions) < 2:
+        raise ValueError(
+            "The provided config file should contain at least 2 images as"
+            " initial conditions"
+        )
+
     data = WarpingDataset(
         initial_conditions, num_samples=config["training"]["n_samples"], device=device
     )
 
     # -------processing the input files------------------#
-
     loss_config = config["loss"]
     training_config = config["training"]
     training_steps = training_config["n_steps"]
@@ -97,21 +90,8 @@ def train_warping(experiment_config_path, output_path, args):
     fps = reconstruct_config.get("fps", 10)
     grid_dims = reconstruct_config.get("frame_dims", (320, 320))
 
-    # best_loss = np.inf
-    # best_step = warmup_steps
-    training_loss = {}
-
     # -------setting the data points------------------#
-
     src, tgt = None, None
-
-    if len(initial_conditions) < 2:
-        raise ValueError(
-            "The provided config file should contain at least 2 images as"
-            " initial conditions"
-        )
-
-    # points_sequence = [ None for _ in range(len(data.initial_conditions))]
     for i in range(len(data.initial_conditions) - 1):
         if f"points_{i}" not in loss_config or f"points_{i+1}" not in loss_config:
             src, tgt, _, _ = get_landmark_correspondences(
@@ -145,21 +125,13 @@ def train_warping(experiment_config_path, output_path, args):
         "internal_network_type", "siren"
     )
 
-    NODE = NeuralODE.load_from_config(network_config).to(device)
-    NODE.internal_module = NODE.internal_module.to(device)
-
-    matching_loss_weight = loss_config.get("matching_loss_weight", 1024)
-    jacobian_loss_weight = loss_config.get("jacobian_loss_weight", 1)
-    timesteps = loss_config.get("timesteps", [0.0, 0.125, 0.25, 0.375, 0.5])
+    model = NeuralODE.load_from_config(network_config).to(device)
+    model.internal_module = model.internal_module.to(device)
 
     lr = float(config["optimizer"].get("lr", 1e-4))
 
     # ----------setting the optimizer----------#
-    optim = torch.optim.Adam(
-        [
-            {"params": NODE.internal_module.parameters(), "lr": lr},
-        ]
-    )
+    optim = torch.optim.Adam(params=model.internal_module.parameters(), lr=lr)
 
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optim,
@@ -175,10 +147,18 @@ def train_warping(experiment_config_path, output_path, args):
         optim, start_factor=1e-1, end_factor=1.0, total_iters=100
     )
 
-    # ----------training----------#
+    # ---------- loss setup ----------#
     dims = network_config.get("dim", 2)
     _grid = torch.linspace(-1, 1, 100)
     grid = torch.cartesian_prod(*[_grid] * dims).to(device)
+
+    constraint_weights = loss_config.get("constraint_weights", None)
+    for k, v in constraint_weights.items():
+        constraint_weights[k] = float(v)
+
+    matching_loss_weight = constraint_weights.get("matching_loss_weight", 1024.)
+    jacobian_loss_weight = constraint_weights.get("jacobian_loss_weight", 1.)
+    timesteps = loss_config.get("timesteps", [0.0, 0.125, 0.25, 0.375, 0.5])
 
     loss_func = NeuralODELoss(
         matching_loss_weight=matching_loss_weight,
@@ -186,8 +166,12 @@ def train_warping(experiment_config_path, output_path, args):
         timesteps=timesteps,
     ).to(device)
 
+    # ---------- training ----------#
+    # best_loss = np.inf
+    # best_step = warmup_steps
+    training_loss = {}
     for step in range(training_steps + 1):
-        loss = loss_func(NODE, src, tgt, grid)
+        loss = loss_func(model, src, tgt, grid)
         matching_error = loss["matching_loss"]
         running_loss = torch.zeros((1, 1)).to(device)
         for k, v in loss.items():
@@ -225,7 +209,6 @@ def train_warping(experiment_config_path, output_path, args):
 
         if checkpoint_steps is not None and step > 0 and not step % checkpoint_steps:
             torch.save(
-                # model.state_dict(),
                 model,
                 osp.join(output_path, f"checkpoint_{step}.pth"),
             )
@@ -239,7 +222,6 @@ def train_warping(experiment_config_path, output_path, args):
     print("Training done. Losses:", loss)
     print("Max mismatch t=1/2:", torch.max(matching_error.sqrt(), dim=0))
 
-    model = NODE
     model = model.eval()
     with torch.no_grad():
         torch.save(model.state_dict(), osp.join(output_path, "weights.pth"))
@@ -251,7 +233,7 @@ def train_warping(experiment_config_path, output_path, args):
         print("Running the inference for the morphing.")
         vidpath = osp.join(output_path, "morphing.mp4")
         create_node_morphing(
-            warp_net=NODE,
+            warp_net=model,
             frame0=None,
             frame1=None,
             output_path=vidpath,
@@ -271,77 +253,13 @@ def train_warping(experiment_config_path, output_path, args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "config_path", nargs="+", help="Path to experiment configuration" " files."
-    )
-    parser.add_argument(
-        "--logging",
-        default="tensorboard",
-        type=str,
-        help="Type of logging to use. May be one of: tensorboard, none."
-        'By default is "tensorboard".',
-    )
-    parser.add_argument(
-        "--seed", default=123, type=int, help="Seed for the RNG. By default its 123."
-    )
-    parser.add_argument(
-        "--n-tasks",
-        default=1,
-        type=int,
-        help="Number of parallel trainings to run. By default is set to 1,"
-        " meaning that we run serially.",
-    )
-    parser.add_argument(
-        "--skip-finished",
-        action="store_true",
-        help="Skips running an experiment if the output path contains the"
-        ' "weights.pth" file.',
-    )
-    parser.add_argument(
-        "--output-path",
-        "-o",
-        default="results",
-        help="Optional output path to store experimental results. By default"
-        " we use the experiment filename and create a matching directory"
-        ' under folder "results".',
-    )
-    parser.add_argument(
-        "--no-ui",
-        "-n",
-        action="store_true",
-        default=False,
-        help="Does not open the UI for point adjustments. Useful when running"
-        " in batches.",
-    )
-    parser.add_argument(
-        "--device",
-        "-d",
-        type=str,
-        default="cuda:0",
-        help="Device to run the"
-        " training. Overrides the experiment configuration if present.",
-    )
-    parser.add_argument(
-        "--no-reconstruction",
-        action="store_true",
-        help="Bypasses the"
-        " configuration and runs no intermediate/final reconstructions.",
-    )
-
-    parser.add_argument(
-        "--only-psi-train",
-        action="store_true",
-        help="Trains only the psi module of the NCF.",
-    )
-
-    parser.add_argument(
-        "--from-pretrained",
-        type=str,
-        default=None,
-        help="Path to the yaml with weights to load the model from.",
-    )
+    parser = get_default_argumentparser()
     args = parser.parse_args()
+
+    # print all args:
+    print("Arguments:")
+    for k, v in vars(args).items():
+        print(f"{k}: {v}")
 
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)

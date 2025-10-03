@@ -84,11 +84,11 @@ class WarpingLoss(torch.nn.Module):
         y_tgt = model(tgt)['model_out']
         data_constraint = (self.tgt - y_src)**2 + (self.src - y_tgt)**2
         data_constraint *= 1e2
-        
+
         alignment_loss = "not calculated"
 
         # forcing the feature matching along time
-        
+
         for t in self.intermediate_times:
             tgt_0 = torch.cat((self.tgt, (t-1)*torch.ones_like(self.tgt[..., :1])), dim=1)
             y_tgt_0 = model(tgt_0)['model_out']
@@ -103,8 +103,8 @@ class WarpingLoss(torch.nn.Module):
             tgt_t = torch.cat((y_tgt_0, 1-t*torch.ones_like(self.tgt[..., :1])), dim=1)
             y_tgt_t = model(tgt_t)['model_out']
             data_constraint += ((y_tgt_t - self.tgt)**2)*2e1
-            
-            
+
+
             if t == 0.5:
                 alignment_loss = (y_src_0 - y_tgt_0)**2
                 alignment_loss = alignment_loss.mean()
@@ -364,6 +364,7 @@ class Warping3DLoss(torch.nn.Module):
             "TPS_constraint": TPS_constraint.mean() * self.constraint_weights["TPS_constraint"],
         }
 
+
 class FlowLoss(torch.nn.Module):
     """MSE loss with feature matching between source and target plus Hessian.
 
@@ -395,7 +396,7 @@ class FlowLoss(torch.nn.Module):
         super(FlowLoss, self).__init__()
         self.constraint_weights = constraint_weights
         self.intermediate_times = torch.tensor(intermediate_times)
-        
+
         if constraint_weights is None or not len(constraint_weights):
             self.constraint_weights = DEFAULT_WEIGHTS_FMLOSS
 
@@ -403,7 +404,7 @@ class FlowLoss(torch.nn.Module):
         for k, v in DEFAULT_WEIGHTS_FMLOSS.items():
             if k not in self.constraint_weights:
                 self.constraint_weights[k] = v
-                
+
         self.loop = loop
 
     def forward(self, coords, model:FDModule):
@@ -421,17 +422,17 @@ class FlowLoss(torch.nn.Module):
         flatten_coords = coords.view(-1, dimenstion_size)
         total_loss_evaluations =  (states - 1) * len(self.intermediate_times)
         self.intermediate_times = self.intermediate_times.to(flatten_coords.device)
-        
+
         # data fitting: f(state_i, delta)= state_i+1
         ts = delta_next_state * self.intermediate_times.repeat(states*n_points).unsqueeze(-1)
         reversed_ts = ts - delta_next_state
-        
+
         flatten_coords = torch.repeat_interleave(flatten_coords, len(self.intermediate_times), dim=0)
         delta_index_state_change = n_points*len(self.intermediate_times)
-        
+
         src = torch.cat((flatten_coords[:-delta_index_state_change], ts[:-delta_index_state_change]), dim=-1)
         y_src = model(src)['model_out']
-        
+
         tgt = torch.cat((flatten_coords[delta_index_state_change:], reversed_ts[delta_index_state_change:]), dim=-1)
         y_tgt = model(tgt)['model_out']
         diagoanl_flow_constraint = torch.tensor(0.0, device=coords.device)
@@ -455,19 +456,14 @@ class FlowLoss(torch.nn.Module):
 
         data_constraint *= 4e2
         TPS_constraint = (TPS_constraint**2)/(total_loss_evaluations**2)
-        
-        
+
+
         if delta_next_state/2 in ts:
             next_state_jump = ts[:-delta_index_state_change] == (delta_next_state/2)
             alignment_loss = (y_src[next_state_jump] - y_tgt[next_state_jump])**2
             alignment_loss = alignment_loss.mean()
         else:
             alignment_loss = "not calculated"
-            
-
-
-            
-        
 
         return {
             "data_constraint": data_constraint.mean() * self.constraint_weights["data_constraint"],
@@ -492,7 +488,7 @@ class NeuralODELoss(torch.nn.Module):
     timesteps: torch.Tensor
         A tensor of timesteps to use for evaluating the loss.
     """
-    def __init__(self, matching_loss_weight: float=1024, jacobian_loss_weight: float=1, timesteps=[0.0,0.125,0.25,0.375,0.5]):
+    def __init__(self, matching_loss_weight: float=1024, jacobian_loss_weight: float=1., timesteps=[0.0,0.125,0.25,0.375,0.5]):
         super(NeuralODELoss, self).__init__()
         self.matching_loss_weight = matching_loss_weight
         self.jacobian_loss_weight = jacobian_loss_weight
@@ -519,7 +515,7 @@ class NeuralODELoss(torch.nn.Module):
             A dictionary containing the matching loss and Jacobian loss.
         """
         self.timesteps = self.timesteps.to(src.device)
-        
+
         # Forward and backward trajectories
         src_fwd = node_model(self.timesteps, src)[-1]
         tgt_bkwd = node_model(-self.timesteps, tgt)[-1]
@@ -537,4 +533,3 @@ class NeuralODELoss(torch.nn.Module):
             "jacobian_loss": self.jacobian_loss_weight * jacobian_loss,
             "_0.5t_alignment_error": matching_loss/src_fwd.shape[-1],
         }
-        
