@@ -1,0 +1,35 @@
+description: warping_with_feature_matching
+device: cuda:0
+experiment_name: ""
+initial_conditions: {}
+loss:
+  sources: []
+  targets: []
+  constraint_weights:
+    data_constraint: 1.0e4
+    diagoanl_flow_constraint: 1.0e3
+    TPS_constraint: 1.0e3
+  intermediate_times: [0.0, 0.25, 0.5, 0.75, 1.0]
+  type: featurematching
+network:
+  hidden_layers: [128]
+  in_channels: 2
+  type: neural_conjugate
+  omega_0: 48
+  omega_w: 48
+  dim_repetitions: 2
+  n_coupling_layers: 3
+  zero_pads: 0
+optimizer:
+  lr: 0.0001
+reconstruct:
+  fps: 20
+  frame_dims: [1024, 1024]
+  n_frames: 101
+  timerange: [-1.0, 1.0]
+training:
+  checkpoint_steps: 5000
+  n_samples: 20000
+  n_steps: 21001
+  reconstruction_steps: 10000
+  warmup_steps: 1000
