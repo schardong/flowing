@@ -10,7 +10,7 @@
 [Guilherme Schardong [6]](https://schardong.github.io/),
 [Tiago Novello [4]](https://sites.google.com/site/tiagonovellodebrito)
 <br>
-[1] École Polytechnique Fédérale de Lausanne (EPFL)
+[1] École Polytechnique Fédérale de Lausanne (EPFL),
 <br>
 [2] Buenos Aires University (UBA),
 <br>
