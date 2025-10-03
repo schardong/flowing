@@ -1,14 +1,14 @@
 # FLOWING 🌊: Implicit Neural Flows for Structure-Preserving Morphing
-[Arthur Bizzi [1]]()
-[Matias Grynberg Portnoy [2]](https://www.linkedin.com/in/mgp123)
-[Vitor Pereira Matias [3]]()
-[Daniel Perazzo [4]](https://www.linkedin.com/in/daniel-perazzo-85a0a3175)
-[João Paulo Lima [5]](https://jpsml.github.io)
+[Arthur Bizzi [1]](),
+[Matias Grynberg Portnoy [2]](https://www.linkedin.com/in/mgp123),
+[Vitor Pereira Matias [3]](),
+[Daniel Perazzo [4]](https://www.linkedin.com/in/daniel-perazzo-85a0a3175),
+[João Paulo Lima [5]](https://jpsml.github.io),
 [Luiz Velho [4]](https://lvelho.impa.br/),
-[Nuno Gonçalves [6,7]](https://home.deec.uc.pt/~nunogon/)
-[João M. Pereira[8]](https://joaompereira.github.io/)
+[Nuno Gonçalves [6,7]](https://home.deec.uc.pt/~nunogon/),
+[João M. Pereira[8]](https://joaompereira.github.io/),
 [Guilherme Schardong [6]](https://schardong.github.io/),
-[Tiago Novello [4]](https://sites.google.com/site/tiagonovellodebrito),
+[Tiago Novello [4]](https://sites.google.com/site/tiagonovellodebrito)
 <br>
 [1] École Polytechnique Fédérale de Lausanne (EPFL)
 <br>
