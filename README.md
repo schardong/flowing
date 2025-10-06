@@ -52,16 +52,16 @@ Basically, you need Python to run the code, a GPU with GPGPU drivers installed (
 
 ### Code organization
 Inside the `standalone` folder, we've stored scripts used for experiments in our paper, mainly the *metrics* (FID and LPIPS), *face image cropping*, *landmark detection*, and *dataset downloads* (in case you are not on a POSIX-compliant system). These are:
-* `align.py` - crop/resize/alignment script for the face images
+* `align.py` - crop/resize/alignment script for the face images. Modified from the FFHQ repo. We mostly use it for cropping, since we perform the alignment ourselves
 * `calc-fid.sh` - calculates the Fréchet Inception Distance (FID) between two sets of images
 * `calc-lpips.py` - calculates the LPIPS between pairs of images
 * `detect-face-landmarks.py` - given a list of face images, detects the facial landmarks using **DLib** and stores them as `.DAT` files, read by the experiment scripts
 
 ### Setup and sample run
 
-The command below runs a warp training using `NCF` as base model, saving the results under `results/001_002-ncf-good_manual_landmarks`.
+The command below trains a warping using Neural Conjugate Flows (NCF) as base model, saving the results under `results/001_002-ncf-good_manual_landmarks`.
 ```{sh}
-python conjugate-warp-train.py experiments/faces/001_002-ncf-good_manual_landmarks.yaml
+python ncf-warp-train.py experiments/faces/001_002-ncf-good_manual_landmarks.yaml
 ```
 
 For Neural-ODEs, you can simply switch the traning script and configuration file as so:
