@@ -15,7 +15,7 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 import yaml
 from ifmorph.dataset import WarpingDataset, Warping3DDataset
-from ifmorph.loss_functions import FlowLoss, NeuralODELoss
+from ifmorph.loss_functions import NeuralODELoss
 from ifmorph.model import NearIdSIREN
 from ifmorph.neural_odes import NeuralODE
 from ifmorph.util import (
@@ -222,35 +222,36 @@ def train_warping(experiment_config_path, output_path, args):
         ):
             print(f"Reconstruction at {step}")
             model = model.eval()
-            create_node_morphing(
-                warp_net=model,
-                frame0=None,
-                frame1=None,
-                output_path=osp.join(output_path, f"rec_{step}_w_landmarks.mp4"),
-                frame_dims=grid_dims,
-                n_frames=n_frames,
-                fps=fps,
-                device=device,
-                landmark_src=src,
-                landmark_tgt=tgt,
-                overlay_landmarks=True,
-                frame_collection=data.initial_states,
-            )
+            with torch.no_grad():
+                create_node_morphing(
+                    warp_net=model,
+                    frame0=None,
+                    frame1=None,
+                    output_path=osp.join(output_path, f"rec_{step}_w_landmarks.mp4"),
+                    frame_dims=grid_dims,
+                    n_frames=n_frames,
+                    fps=fps,
+                    device=device,
+                    landmark_src=src,
+                    landmark_tgt=tgt,
+                    overlay_landmarks=True,
+                    frame_collection=data.initial_states,
+                )
 
-            create_node_morphing(
-                warp_net=model,
-                frame0=None,
-                frame1=None,
-                output_path=osp.join(output_path, f"rec_{step}_no_landmarks.mp4"),
-                frame_dims=grid_dims,
-                n_frames=n_frames,
-                fps=fps,
-                device=device,
-                landmark_src=src,
-                landmark_tgt=tgt,
-                overlay_landmarks=False,
-                frame_collection=data.initial_states,
-            )
+                create_node_morphing(
+                    warp_net=model,
+                    frame0=None,
+                    frame1=None,
+                    output_path=osp.join(output_path, f"rec_{step}_no_landmarks.mp4"),
+                    frame_dims=grid_dims,
+                    n_frames=n_frames,
+                    fps=fps,
+                    device=device,
+                    landmark_src=src,
+                    landmark_tgt=tgt,
+                    overlay_landmarks=False,
+                    frame_collection=data.initial_states,
+                )
             model = model.train()
 
         optim.zero_grad()
@@ -279,35 +280,36 @@ def train_warping(experiment_config_path, output_path, args):
 
     if not args.no_reconstruction:
         print("Running the inference for the morphing.")
-        create_node_morphing(
-            warp_net=model,
-            frame0=None,
-            frame1=None,
-            output_path=osp.join(output_path, "morphing_w_landmarks.mp4"),
-            frame_dims=grid_dims,
-            n_frames=n_frames,
-            fps=fps,
-            device=device,
-            landmark_src=src,
-            landmark_tgt=tgt,
-            overlay_landmarks=True,
-            frame_collection=data.initial_states,
-        )
+        with torch.no_grad():
+            create_node_morphing(
+                warp_net=model,
+                frame0=None,
+                frame1=None,
+                output_path=osp.join(output_path, "morphing_w_landmarks.mp4"),
+                frame_dims=grid_dims,
+                n_frames=n_frames,
+                fps=fps,
+                device=device,
+                landmark_src=src,
+                landmark_tgt=tgt,
+                overlay_landmarks=True,
+                frame_collection=data.initial_states,
+            )
 
-        create_node_morphing(
-            warp_net=model,
-            frame0=None,
-            frame1=None,
-            output_path=osp.join(output_path, "morphing_no_landmarks.mp4"),
-            frame_dims=grid_dims,
-            n_frames=n_frames,
-            fps=fps,
-            device=device,
-            landmark_src=src,
-            landmark_tgt=tgt,
-            overlay_landmarks=False,
-            frame_collection=data.initial_states,
-        )
+            create_node_morphing(
+                warp_net=model,
+                frame0=None,
+                frame1=None,
+                output_path=osp.join(output_path, "morphing_no_landmarks.mp4"),
+                frame_dims=grid_dims,
+                n_frames=n_frames,
+                fps=fps,
+                device=device,
+                landmark_src=src,
+                landmark_tgt=tgt,
+                overlay_landmarks=False,
+                frame_collection=data.initial_states,
+            )
         print("Inference done.")
 
 
