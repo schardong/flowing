@@ -1,4 +1,4 @@
-dlib==19.24.4
+dlib>=19.24.5
 matplotlib>=3.10.1
 numpy>=2.2.5
 nvidia-cudnn-cu11==9.8.0.87
@@ -14,4 +14,3 @@ torch>=2.6.0
 torchdiffeq>=0.2.5
 torchvision>=0.21.0
 tqdm>=4.67.1
-

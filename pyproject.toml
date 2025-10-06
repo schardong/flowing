@@ -1,13 +1,21 @@
 [project]
-name = "conjugate-morphing"
+name = "flowing"
 version = "0.1.0"
-description = "Image Morphing with Neural Conjugate Flows and NODEs"
+description = "Morphing with Neural Conjugate Flows and NODEs"
 license = "MIT"
 readme = "README.md"
+requires-python = ">= 3.12"
 
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools >= 77.0.3"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["ifmorph"]
 
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
+
+[project.urls]
+Homepage = "https://github.io/schardong/flowing"
+Repository = "https://github.com/schardong/flowing.git"
