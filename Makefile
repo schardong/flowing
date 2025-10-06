@@ -26,3 +26,9 @@ results/001_002-node-good_manual_landmarks/weights.pth: data/frll_neutral_front 
 
 results/sandy_frll-002_node/weights.pth:
 	@python node-warp-train.py --device cuda:0 --no-ui experiments/faces/sandy_frll-002_node.yaml
+
+results/001_002-ncf-good_manual_landmarks/weights.pth: data/frll_neutral_front landmark_models/shape_predictor_68_face_landmarks_GTX.dat
+	@python ncf-warp-train.py --device cuda:0 --no-ui experiments/faces/001_002-ncf-good_manual_landmarks.yaml
+
+results/sandy_frll-002_ncf/weights.pth:
+	@python ncf-warp-train.py --device cuda:0 --no-ui experiments/faces/sandy_frll-002_ncf.yaml

@@ -16,7 +16,12 @@ from torch.utils.tensorboard import SummaryWriter
 import yaml
 from ifmorph.dataset import WarpingDataset
 from ifmorph.loss_functions import FlowLoss
-from ifmorph.util import create_morphing, get_landmark_correspondences
+from ifmorph.util import (
+    create_morphing,
+    get_landmark_correspondences,
+    get_default_argumentparser,
+    get_device,
+)
 from ifmorph.neural_conjugate_flows import *
 from ifmorph.fd_models import convert_to_fd
 from tqdm import tqdm
@@ -192,16 +197,14 @@ def train_warping(experiment_config_path, output_path, args):
             else:
                 training_loss[k].append(v.item())
 
-            # Logging individual loss terms.
-            if logger_type == LoggerType.TENSORBOARD:
+        # Logging the total training loss and individual terms.
+        if logger_type == LoggerType.TENSORBOARD:
+            for k, v in loss.items():
                 writer.add_scalar(f"train_loss/{k}", v.item(), step)
 
-        # Logging the total training loss.
-        if logger_type == LoggerType.TENSORBOARD:
             writer.add_scalar("train_loss/total_loss", running_loss.item(), step)
 
         if not step % 1000:
-            # print(step, running_loss.item())
             try:
                 print(
                     step,
@@ -224,7 +227,6 @@ def train_warping(experiment_config_path, output_path, args):
 
         if checkpoint_steps is not None and step > 0 and not step % checkpoint_steps:
             torch.save(
-                # model.state_dict(),
                 model,
                 osp.join(output_path, f"checkpoint_{step}.pth"),
             )
@@ -232,13 +234,12 @@ def train_warping(experiment_config_path, output_path, args):
         if reconstruct_steps is not None and step > 0 and not step % reconstruct_steps:
             print("Running the inference.")
             model = model.eval()
-            vidpath = osp.join(output_path, f"rec_{step}.mp4")
             with torch.no_grad():
                 create_morphing(
                     warp_net=model,
                     frame0=None,
                     frame1=None,
-                    output_path=vidpath,
+                    output_path=osp.join(output_path, f"rec_{step}_w_landmarks.mp4"),
                     frame_dims=grid_dims,
                     n_frames=n_frames,
                     fps=fps,
@@ -247,6 +248,22 @@ def train_warping(experiment_config_path, output_path, args):
                     landmark_tgt=tgt,
                     blending_type="linear",
                     overlay_landmarks=True,
+                    frame_collection=data.initial_states,
+                )
+
+                create_morphing(
+                    warp_net=model,
+                    frame0=None,
+                    frame1=None,
+                    output_path=osp.join(output_path, f"rec_{step}_no_landmarks.mp4"),
+                    frame_dims=grid_dims,
+                    n_frames=n_frames,
+                    fps=fps,
+                    device=device,
+                    landmark_src=src,
+                    landmark_tgt=tgt,
+                    blending_type="linear",
+                    overlay_landmarks=False,
                     frame_collection=data.initial_states,
                 )
             print("Inference done.")
@@ -261,19 +278,13 @@ def train_warping(experiment_config_path, output_path, args):
     print(f"Saving the results in folder {output_path}.")
     model = model.eval()
     with torch.no_grad():
-        # model.update_omegas(w0=1, ww=None)
         torch.save(
-            # model.state_dict(), osp.join(output_path, "weights.pth")
             model,
             osp.join(output_path, "weights.pth"),
         )
 
-        # model.w0 = network_config["omega_0"]
-        # model.ww = network_config["omega_w"]
         model.load_state_dict(best_weights)
-        # model.update_omegas(w0=1, ww=None)
         torch.save(
-            # model.state_dict(), osp.join(output_path, "best.pth")
             model,
             osp.join(output_path, "best.pth"),
         )
@@ -283,13 +294,11 @@ def train_warping(experiment_config_path, output_path, args):
 
     if not args.no_reconstruction:
         print("Running the inference.")
-
-        vidpath = osp.join(output_path, "video.mp4")
         create_morphing(
             warp_net=model,
             frame0=None,
             frame1=None,
-            output_path=vidpath,
+            output_path=osp.join(output_path, "morphing_w_landmarks.mp4"),
             frame_dims=grid_dims,
             n_frames=n_frames,
             fps=fps,
@@ -299,6 +308,21 @@ def train_warping(experiment_config_path, output_path, args):
             overlay_landmarks=True,
             frame_collection=data.initial_states,
         )
+
+        create_morphing(
+            warp_net=model,
+            frame0=None,
+            frame1=None,
+            output_path=osp.join(output_path, "morphing_no_landmarks.mp4"),
+            frame_dims=grid_dims,
+            n_frames=n_frames,
+            fps=fps,
+            device=device,
+            landmark_src=src,
+            landmark_tgt=tgt,
+            overlay_landmarks=False,
+            frame_collection=data.initial_states,
+        )
         print("Inference done.")
 
     if logger_type == LoggerType.TENSORBOARD:
@@ -306,71 +330,18 @@ def train_warping(experiment_config_path, output_path, args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "config_path", nargs="+", help="Path to experiment configuration" " files."
-    )
-    parser.add_argument(
-        "--logging",
-        default="tensorboard",
-        type=str,
-        help="Type of logging to use. May be one of: tensorboard, none."
-        'By default is "tensorboard".',
-    )
-    parser.add_argument(
-        "--seed", default=123, type=int, help="Seed for the RNG. By default its 123."
-    )
-    parser.add_argument(
-        "--n-tasks",
-        default=1,
-        type=int,
-        help="Number of parallel trainings to run. By default is set to 1,"
-        " meaning that we run serially.",
-    )
-    parser.add_argument(
-        "--skip-finished",
-        action="store_true",
-        help="Skips running an experiment if the output path contains the"
-        ' "weights.pth" file.',
-    )
-    parser.add_argument(
-        "--output-path",
-        "-o",
-        default="results",
-        help="Optional output path to store experimental results. By default"
-        " we use the experiment filename and create a matching directory"
-        ' under folder "results".',
-    )
-    parser.add_argument(
-        "--no-ui",
-        "-n",
-        action="store_true",
-        default=False,
-        help="Does not open the UI for point adjustments. Useful when running"
-        " in batches.",
-    )
-    parser.add_argument(
-        "--device",
-        "-d",
-        type=str,
-        default="cuda:0",
-        help="Device to run the"
-        " training. Overrides the experiment configuration if present.",
-    )
-    parser.add_argument(
-        "--no-reconstruction",
-        action="store_true",
-        help="Bypasses the"
-        " configuration and runs no intermediate/final reconstructions.",
-    )
+    parser = get_default_argumentparser()
     parser.add_argument(
         "--from-pretrained",
         type=str,
         default=None,
         help="Path to the yaml" " with eights to load the model from.",
     )
-
     args = parser.parse_args()
+
+    print("Arguments:")
+    for k, v in vars(args).items():
+        print(f"{k}: {v}")
 
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
