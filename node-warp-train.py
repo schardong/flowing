@@ -18,7 +18,12 @@ from ifmorph.dataset import WarpingDataset, Warping3DDataset
 from ifmorph.loss_functions import FlowLoss, NeuralODELoss
 from ifmorph.model import NearIdSIREN
 from ifmorph.neural_odes import NeuralODE
-from ifmorph.util import create_node_morphing, get_landmark_correspondences, get_default_argumentparser, get_device
+from ifmorph.util import (
+    create_node_morphing,
+    get_landmark_correspondences,
+    get_default_argumentparser,
+    get_device,
+)
 from tqdm import tqdm
 
 
@@ -66,6 +71,7 @@ def train_warping(experiment_config_path, output_path, args):
 
     device = get_device(args.device, config.get("device", "cuda:0"))
 
+    # ------- processing the input files ------- #
     initial_conditions = [(v, k) for k, v in config["initial_conditions"].items()]
     if len(initial_conditions) < 2:
         raise ValueError(
@@ -77,20 +83,19 @@ def train_warping(experiment_config_path, output_path, args):
         initial_conditions, num_samples=config["training"]["n_samples"], device=device
     )
 
-    # -------processing the input files------------------#
     loss_config = config["loss"]
     training_config = config["training"]
     training_steps = training_config["n_steps"]
-    warmup_steps = training_config[
-        "n_steps"
-    ]  # training_config.get("warmup_steps", training_steps // 10)
+    reconstruction_steps = training_config.get("reconstruction_steps", None)
+
+    warmup_steps = training_config["n_steps"]
     checkpoint_steps = training_config.get("checkpoint_steps", None)
     reconstruct_config = config["reconstruct"]
     n_frames = reconstruct_config.get("n_frames", 100)
     fps = reconstruct_config.get("fps", 10)
     grid_dims = reconstruct_config.get("frame_dims", (320, 320))
 
-    # -------setting the data points------------------#
+    # ------- creating the correspondences ------- #
     src, tgt = None, None
     for i in range(len(data.initial_conditions) - 1):
         if f"points_{i}" not in loss_config or f"points_{i+1}" not in loss_config:
@@ -119,7 +124,7 @@ def train_warping(experiment_config_path, output_path, args):
     with open(osp.join(output_path, "config.yaml"), "w") as fout:
         yaml.dump(config, fout)
 
-    # ------------constructing the model------------------#
+    # ------- constructing the model ------- #
     network_config = config["network"]
     network_config["internal_network_type"] = network_config.get(
         "internal_network_type", "siren"
@@ -128,9 +133,8 @@ def train_warping(experiment_config_path, output_path, args):
     model = NeuralODE.load_from_config(network_config).to(device)
     model.internal_module = model.internal_module.to(device)
 
+    # ------- setting the optimizer and training schedulers ------- #
     lr = float(config["optimizer"].get("lr", 1e-4))
-
-    # ----------setting the optimizer----------#
     optim = torch.optim.Adam(params=model.internal_module.parameters(), lr=lr)
 
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
@@ -156,8 +160,8 @@ def train_warping(experiment_config_path, output_path, args):
     for k, v in constraint_weights.items():
         constraint_weights[k] = float(v)
 
-    matching_loss_weight = constraint_weights.get("matching_loss_weight", 1024.)
-    jacobian_loss_weight = constraint_weights.get("jacobian_loss_weight", 1.)
+    matching_loss_weight = constraint_weights.get("matching_loss_weight", 1024.0)
+    jacobian_loss_weight = constraint_weights.get("jacobian_loss_weight", 1.0)
     timesteps = loss_config.get("timesteps", [0.0, 0.125, 0.25, 0.375, 0.5])
 
     loss_func = NeuralODELoss(
@@ -182,16 +186,14 @@ def train_warping(experiment_config_path, output_path, args):
             else:
                 training_loss[k].append(v.item())
 
-            # Logging individual loss terms.
-            if logger_type == LoggerType.TENSORBOARD:
+        # Logging the total training loss and individual terms.
+        if logger_type == LoggerType.TENSORBOARD:
+            for k, v in loss.items():
                 writer.add_scalar(f"train_loss/{k}", v.item(), step)
 
-        # Logging the total training loss.
-        if logger_type == LoggerType.TENSORBOARD:
             writer.add_scalar("train_loss/total_loss", running_loss.item(), step)
 
         if not step % 1000:
-            # print(step, running_loss.item())
             try:
                 print(
                     step,
@@ -213,6 +215,44 @@ def train_warping(experiment_config_path, output_path, args):
                 osp.join(output_path, f"checkpoint_{step}.pth"),
             )
 
+        if (
+            reconstruction_steps is not None
+            and step > 0
+            and not step % reconstruction_steps
+        ):
+            print(f"Reconstruction at {step}")
+            model = model.eval()
+            create_node_morphing(
+                warp_net=model,
+                frame0=None,
+                frame1=None,
+                output_path=osp.join(output_path, f"rec_{step}_w_landmarks.mp4"),
+                frame_dims=grid_dims,
+                n_frames=n_frames,
+                fps=fps,
+                device=device,
+                landmark_src=src,
+                landmark_tgt=tgt,
+                overlay_landmarks=True,
+                frame_collection=data.initial_states,
+            )
+
+            create_node_morphing(
+                warp_net=model,
+                frame0=None,
+                frame1=None,
+                output_path=osp.join(output_path, f"rec_{step}_no_landmarks.mp4"),
+                frame_dims=grid_dims,
+                n_frames=n_frames,
+                fps=fps,
+                device=device,
+                landmark_src=src,
+                landmark_tgt=tgt,
+                overlay_landmarks=False,
+                frame_collection=data.initial_states,
+            )
+            model = model.train()
+
         optim.zero_grad()
         running_loss.backward()
         optim.step()
@@ -220,7 +260,15 @@ def train_warping(experiment_config_path, output_path, args):
         scheduler.step(running_loss)
 
     print("Training done. Losses:", loss)
-    print("Max mismatch t=1/2:", torch.max(matching_error.sqrt(), dim=0))
+    print("Max mismatch t=1/2:", matching_error.sqrt())
+
+    if logger_type == LoggerType.TENSORBOARD:
+        writer.add_scalar(
+            "train_loss/max_mismatch_t=1/2",
+            matching_error.detach(),
+            step,
+        )
+        writer.close()
 
     model = model.eval()
     with torch.no_grad():
@@ -231,12 +279,11 @@ def train_warping(experiment_config_path, output_path, args):
 
     if not args.no_reconstruction:
         print("Running the inference for the morphing.")
-        vidpath = osp.join(output_path, "morphing.mp4")
         create_node_morphing(
             warp_net=model,
             frame0=None,
             frame1=None,
-            output_path=vidpath,
+            output_path=osp.join(output_path, "morphing_w_landmarks.mp4"),
             frame_dims=grid_dims,
             n_frames=n_frames,
             fps=fps,
@@ -246,10 +293,22 @@ def train_warping(experiment_config_path, output_path, args):
             overlay_landmarks=True,
             frame_collection=data.initial_states,
         )
-        print("Inference done.")
 
-    if logger_type == LoggerType.TENSORBOARD:
-        writer.close()
+        create_node_morphing(
+            warp_net=model,
+            frame0=None,
+            frame1=None,
+            output_path=osp.join(output_path, "morphing_no_landmarks.mp4"),
+            frame_dims=grid_dims,
+            n_frames=n_frames,
+            fps=fps,
+            device=device,
+            landmark_src=src,
+            landmark_tgt=tgt,
+            overlay_landmarks=False,
+            frame_collection=data.initial_states,
+        )
+        print("Inference done.")
 
 
 if __name__ == "__main__":

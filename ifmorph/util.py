@@ -10,31 +10,26 @@ import torch
 import matplotlib.pyplot as plt
 from typing import List
 import platform
-
 from ifmorph.point_editor import FaceInteractor
 
 try:
     import dlib
 except ImportError:
-    print("dlib module not found. Some features may not work.",
-          file=sys.stderr)
+    print("dlib module not found. Some features may not work.", file=sys.stderr)
     dlib = None
 
 try:
     import mediapipe as mp
+
     if platform.system() != "Windows":
         mp_face_mesh = mp.solutions.face_mesh
 except ImportError:
-    print("mediapipe module not found. Some features may not work.",
-          file=sys.stderr)
+    print("mediapipe module not found. Some features may not work.", file=sys.stderr)
     mp_face_mesh = None
 
 
 def warp_points_ncf(
-    model: torch.nn.Module,
-    points: torch.Tensor,
-    t: float,
-    preserve_grad: bool = False
+    model: torch.nn.Module, points: torch.Tensor, t: float, preserve_grad: bool = False
 ) -> torch.Tensor:
     repetitions = 1
     zero_pads = 0 * repetitions
@@ -43,14 +38,11 @@ def warp_points_ncf(
     p = torch.cat((p, zeros), dim=1)
     t_points = torch.cat((p, torch.full_like(points[..., -1:], t)), dim=-1)
     out = model(t_points)
-    return out['model_out']
+    return out["model_out"]
 
 
 def warp_points_node(
-    model: torch.nn.Module,
-    points: torch.Tensor,
-    t: float,
-    preserve_grad: bool = False
+    model: torch.nn.Module, points: torch.Tensor, t: float, preserve_grad: bool = False
 ) -> torch.Tensor:
     repetitions = 1
     zero_pads = 0 * repetitions
@@ -119,7 +111,7 @@ def get_landmarks_hull(img):
     _, thresh = cv2.threshold(gray, 100, 100, cv2.THRESH_BINARY_INV)
     contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     biggest_contour = max(contours, key=cv2.contourArea)
-    return biggest_contour[:,0,:]
+    return biggest_contour[:, 0, :]
 
 
 def get_grid(dims, requires_grad=False, list_of_coords=True):
@@ -146,9 +138,9 @@ def get_grid(dims, requires_grad=False, list_of_coords=True):
     """
     if isinstance(dims, int):
         dims = [dims]
-    tensors = tuple([
-        torch.linspace(-1+(1.0/d), 1-(1.0/d), steps=d) for d in dims
-    ])
+    tensors = tuple(
+        [torch.linspace(-1 + (1.0 / d), 1 - (1.0 / d), steps=d) for d in dims]
+    )
     mgrid = torch.stack(torch.meshgrid(*tensors, indexing="ij"), dim=-1)
     if list_of_coords:
         mgrid = mgrid.reshape(-1, len(dims))
@@ -156,7 +148,7 @@ def get_grid(dims, requires_grad=False, list_of_coords=True):
     return mgrid
 
 
-def get_silhouette_lm(img: np.ndarray, method: str="dlib") -> np.ndarray:
+def get_silhouette_lm(img: np.ndarray, method: str = "dlib") -> np.ndarray:
     """Returns the silhouette landmarks from `img` in pixel coordinates.
 
     Parameters
@@ -205,11 +197,13 @@ def get_silhouette_lm(img: np.ndarray, method: str="dlib") -> np.ndarray:
             model_asset_path=osp.join("landmark_models", "face_landmarker.task"),
         )
         lmopts = vision.FaceLandmarkerOptions(
-            base_options=baseopts, output_face_blendshapes=False,
-            output_facial_transformation_matrixes=False, num_faces=1,
+            base_options=baseopts,
+            output_face_blendshapes=False,
+            output_facial_transformation_matrixes=False,
+            num_faces=1,
             running_mode=vision.RunningMode.IMAGE,
             min_face_detection_confidence=0.5,
-            min_face_presence_confidence=0.5
+            min_face_presence_confidence=0.5,
         )
         detector = vision.FaceLandmarker.create_from_options(lmopts)
 
@@ -221,10 +215,46 @@ def get_silhouette_lm(img: np.ndarray, method: str="dlib") -> np.ndarray:
         landmarks[:, 0] *= img.shape[1]
         landmarks[:, 1] *= img.shape[0]
         landmarks = landmarks.astype(np.int32)
-        landmarks = landmarks[[
-            10, 109, 67, 103, 54, 21, 162, 127, 234, 93, 132, 58, 172, 136,
-            150, 149, 176, 148, 152, 377, 400, 378, 379, 365, 397, 288, 361,
-            323, 454, 356, 389, 251, 284, 332, 297, 338], :
+        landmarks = landmarks[
+            [
+                10,
+                109,
+                67,
+                103,
+                54,
+                21,
+                162,
+                127,
+                234,
+                93,
+                132,
+                58,
+                172,
+                136,
+                150,
+                149,
+                176,
+                148,
+                152,
+                377,
+                400,
+                378,
+                379,
+                365,
+                397,
+                288,
+                361,
+                323,
+                454,
+                356,
+                389,
+                251,
+                284,
+                332,
+                297,
+                338,
+            ],
+            :,
         ]
 
     return landmarks
@@ -292,8 +322,7 @@ def plot_scalars(t: torch.Tensor):
     return fig, ax
 
 
-def batched_predict(model: torch.nn.Module, coord_arr: torch.Tensor,
-                    batch_size: int):
+def batched_predict(model: torch.nn.Module, coord_arr: torch.Tensor, batch_size: int):
     """Runs model prediction in batches to avoid memory issues."""
     with torch.no_grad():
         n = coord_arr.shape[0]
@@ -309,8 +338,14 @@ def batched_predict(model: torch.nn.Module, coord_arr: torch.Tensor,
 
 
 def warp_shapenet_inference(
-        grid, t, warpnet, shapenet, framedims=None, bggray=0,
-        preserve_grad=False, normalize_to_byte=True
+    grid,
+    t,
+    warpnet,
+    shapenet,
+    framedims=None,
+    bggray=0,
+    preserve_grad=False,
+    normalize_to_byte=True,
 ):
     """Performs the inference on a `warpnet` and feeds the results to a
     `shapenet`, normalizing the areas out-of-domain.
@@ -352,9 +387,7 @@ def warp_shapenet_inference(
     coords: torch.Tensor
         The warped coordinates used as input for `shapenet`.
     """
-    wcoords, _ = warp_points(
-        warpnet, grid, t, preserve_grad=preserve_grad
-    )
+    wcoords, _ = warp_points(warpnet, grid, t, preserve_grad=preserve_grad)
     out = shapenet(wcoords, preserve_grad=preserve_grad)
     img = out["model_out"].clamp(0, 1)
     coords = out["model_in"]
@@ -365,14 +398,10 @@ def warp_shapenet_inference(
 
     # restrict to the image domain [-1,1]^2
     img = torch.where(
-        torch.abs(coords[..., 0].unsqueeze(-1)) < 1.0,
-        img,
-        torch.full_like(img, bggray)
+        torch.abs(coords[..., 0].unsqueeze(-1)) < 1.0, img, torch.full_like(img, bggray)
     )
     img = torch.where(
-        torch.abs(coords[..., 1].unsqueeze(-1)) < 1.0,
-        img,
-        torch.full_like(img, bggray)
+        torch.abs(coords[..., 1].unsqueeze(-1)) < 1.0, img, torch.full_like(img, bggray)
     )
     if framedims is not None:
         img = img.reshape([framedims[0], framedims[1], shapenet.out_features])
@@ -380,8 +409,11 @@ def warp_shapenet_inference(
 
 
 def warp_points(
-        model: torch.nn.Module, points: torch.Tensor, t: float,
-        preserve_grad: bool=False, clip: bool=True
+    model: torch.nn.Module,
+    points: torch.Tensor,
+    t: float,
+    preserve_grad: bool = False,
+    clip: bool = True,
 ) -> torch.Tensor:
     """Warps `points` by parameter `t` in range [-1, 1] using `model`.
 
@@ -412,14 +444,14 @@ def warp_points(
         its a perfect copy of `points`.
     """
 
-    #--- GAMBIARRA ---
+    # --- GAMBIARRA ---
     repetitions = 1
     zero_pads = 0 * repetitions
     zeros = torch.zeros(points.shape[0], zero_pads).to(points.device)
     p = points.repeat(1, repetitions)
     p = torch.cat((p, zeros), dim=1)
-    t_points = torch.cat((p, torch.full_like(points[..., -1:], t)), dim=-1) #data[0]
-    #--- GAMBIARRA ---
+    t_points = torch.cat((p, torch.full_like(points[..., -1:], t)), dim=-1)  # data[0]
+    # --- GAMBIARRA ---
 
     out = model(t_points, preserve_grad=preserve_grad)
 
@@ -430,8 +462,11 @@ def warp_points(
 
 
 def time_warp_points(
-        model: torch.nn.Module, points: torch.Tensor, t: float,
-        preserve_grad: bool = False, clip: bool = True
+    model: torch.nn.Module,
+    points: torch.Tensor,
+    t: float,
+    preserve_grad: bool = False,
+    clip: bool = True,
 ) -> torch.Tensor:
     """Warps `points` by parameter `t` in range [-1, 1] using `model`.
 
@@ -460,14 +495,14 @@ def time_warp_points(
     """
 
     p = points
-    t_points = torch.cat((torch.full_like(points[..., -1:], t), p), dim=-1) #data[0]
+    t_points = torch.cat((torch.full_like(points[..., -1:], t), p), dim=-1)  # data[0]
 
     out = model(t_points, preserve_grad=preserve_grad)
 
     if clip:
         out["model_out"] = out["model_out"].clamp(-1, 1)
 
-    return out["model_out"][...,1:3], out["model_in"][...,1:3]
+    return out["model_out"][..., 1:3], out["model_in"][..., 1:3]
 
 
 def plot_landmarks(im: np.array, landmarks: np.array, c=(0, 255, 0), r=1) -> np.array:
@@ -506,16 +541,19 @@ def plot_landmarks(im: np.array, landmarks: np.array, c=(0, 255, 0), r=1) -> np.
 
     # rad = int(math.ceil(r / 2))
     for lm in lmn:
-        imc = cv2.circle(
-            imc, lm[::-1], radius=r, color=c, thickness=-1
-        )
+        imc = cv2.circle(imc, lm[::-1], radius=r, color=c, thickness=-1)
 
     return imc
 
 
 def blend_frames(
-        f1: torch.Tensor, f2: torch.Tensor, t: float, blending_type: str, mask_0: torch.Tensor=None, mask_1: torch.Tensor=None,
-        landmark_detection: str="mediapipe"
+    f1: torch.Tensor,
+    f2: torch.Tensor,
+    t: float,
+    blending_type: str,
+    mask_0: torch.Tensor = None,
+    mask_1: torch.Tensor = None,
+    landmark_detection: str = "mediapipe",
 ) -> np.array:
     """Blends frames `f1` and `f2` following `blending_type`.
 
@@ -548,24 +586,22 @@ def blend_frames(
 
     if blending_type == "linear":
         xor_mask = mask_0 ^ mask_1
-        left_edge_weight =  xor_mask *  (mask_0 * t - mask_1 * (1 - t))
+        left_edge_weight = xor_mask * (mask_0 * t - mask_1 * (1 - t))
         right_edge_weight = xor_mask * (mask_1 * (1 - t) - mask_0 * t)
         rec = (1 - t + left_edge_weight) * f1 + (t + right_edge_weight) * f2
         rec = (1 - t) * f1 + t * f2
     elif blending_type == "linear_masked":
         f1np = f1.detach().cpu().numpy()
         if f1np.max() <= 1.0:
-            f1np *= 255.
+            f1np *= 255.0
         f1np = f1np.astype(np.uint8)
 
         f2np = f2.detach().cpu().numpy()
         if f2np.max() <= 1.0:
-            f2np *= 255.
+            f2np *= 255.0
         f2np = f2np.astype(np.uint8)
 
-        landmarks = get_silhouette_lm(
-            f1np, method=landmark_detection
-        ).astype(np.int32)
+        landmarks = get_silhouette_lm(f1np, method=landmark_detection).astype(np.int32)
         mask = np.zeros(f2.shape, dtype=np.uint8)
         mask_full = cv2.fillPoly(
             mask, np.array([landmarks], dtype=np.int32), (255, 255, 255)
@@ -585,20 +621,23 @@ def blend_frames(
         center = (int(br[0] + br[2] / 2), int(br[1] + br[3] / 2))
 
         rec = cv2.seamlessClone(
-            ft_masked.astype(np.uint8), f1np, mask_full, p=center,
-            flags=cv2.NORMAL_CLONE
+            ft_masked.astype(np.uint8),
+            f1np,
+            mask_full,
+            p=center,
+            flags=cv2.NORMAL_CLONE,
         )
 
     elif "min" in blending_type:
         rec = torch.minimum(f1, f2)
     elif "max" in blending_type:
         xor_mask = mask_0 ^ mask_1
-        xor_mask =  ~ xor_mask
+        xor_mask = ~xor_mask
         left_mask = xor_mask | mask_0
         right_mask = xor_mask | mask_1
-        rec = torch.maximum(f1*left_mask, f2*right_mask)
+        rec = torch.maximum(f1 * left_mask, f2 * right_mask)
     elif "bump" in blending_type:
-        right_coeff =  0.5 * (torch.tanh(6 * (torch.tensor(t) - 0.5)) + 1)
+        right_coeff = 0.5 * (torch.tanh(6 * (torch.tensor(t) - 0.5)) + 1)
         left_coeff = 1 - right_coeff
         rec = left_coeff * f1 + right_coeff * f2
     elif "src" in blending_type:
@@ -618,7 +657,7 @@ def blend_frames(
 
         f1np = f1.detach().cpu().numpy()
         if f1np.max() <= 1.0:
-            f1np *= 255.
+            f1np *= 255.0
         f1np = f1np.astype(np.uint8)
 
         f2np = f2.detach().cpu().numpy()
@@ -637,9 +676,7 @@ def blend_frames(
         kernel = np.ones((5, 5), np.uint8)
         mask_eroded = cv2.erode(mask, kernel, iterations=1)
 
-        rec = cv2.seamlessClone(
-            f2np, f1np, mask_eroded, p=center, flags=flags
-        )
+        rec = cv2.seamlessClone(f2np, f1np, mask_eroded, p=center, flags=flags)
 
     if isinstance(rec, torch.Tensor):
         if rec.max() <= 1.0:
@@ -650,20 +687,20 @@ def blend_frames(
 
 
 def create_morphing(
-        warp_net: torch.nn.Module,
-        frame0: torch.nn.Module,
-        frame1: torch.nn.Module,
-        output_path: str,
-        frame_dims: tuple,
-        n_frames: int,
-        fps: int,
-        device: torch.device,
-        landmark_src,
-        landmark_tgt,
-        overlay_landmarks=True,
-        blending_type="linear",
-        frame_collection: List[torch.nn.Module]=None,
-        edge_mask=False
+    warp_net: torch.nn.Module,
+    frame0: torch.nn.Module,
+    frame1: torch.nn.Module,
+    output_path: str,
+    frame_dims: tuple,
+    n_frames: int,
+    fps: int,
+    device: torch.device,
+    landmark_src,
+    landmark_tgt,
+    overlay_landmarks=True,
+    blending_type="linear",
+    frame_collection: List[torch.nn.Module] = None,
+    edge_mask=False,
 ):
     """Creates a video file given a model and output path.
 
@@ -731,11 +768,12 @@ def create_morphing(
     times = np.arange(t1, t2, (t2 - t1) / n_frames)
     grid = get_grid(frame_dims).to(device).requires_grad_(False)
 
-    print(f"Doing morphing with parameters | n_frames: {n_frames} | fps: {fps} | continuousp {continuousp} | frame0 {frame0} ")
-    out = cv2.VideoWriter(output_path,
-                          cv2.VideoWriter_fourcc(*"mp4v"),
-                          fps,
-                          frame_dims[::-1], True)
+    print(
+        f"Doing morphing with parameters | n_frames: {n_frames} | fps: {fps} | continuousp {continuousp} | frame0 {frame0} "
+    )
+    out = cv2.VideoWriter(
+        output_path, cv2.VideoWriter_fourcc(*"mp4v"), fps, frame_dims[::-1], True
+    )
 
     with torch.no_grad():
         if isinstance(landmark_src, torch.Tensor):
@@ -747,8 +785,6 @@ def create_morphing(
             landmark_tgt = landmark_tgt.clone().detach()
         else:
             landmark_tgt = torch.Tensor(landmark_tgt).to(device).float()
-
-
 
         for t in times:
             mask_0 = None
@@ -764,29 +800,39 @@ def create_morphing(
 
             if continuousp:
                 rec0, _ = warp_shapenet_inference(
-                    grid, left_t-t, warp_net, frame_left, frame_dims
+                    grid, left_t - t, warp_net, frame_left, frame_dims
                 )
                 rec1, _ = warp_shapenet_inference(
-                    grid, right_t-t, warp_net, frame_right, frame_dims
+                    grid, right_t - t, warp_net, frame_right, frame_dims
                 )
             else:
-                landmark_src_warped, _ = warp_points(warp_net, grid, left_t-t)
+                landmark_src_warped, _ = warp_points(warp_net, grid, left_t - t)
                 wpoints = landmark_src_warped
-                mask_0 = (wpoints[..., 0] > -1) & (wpoints[..., 0] < 1) & (wpoints[..., 1] > -1) & (wpoints[..., 1] < 1)
+                mask_0 = (
+                    (wpoints[..., 0] > -1)
+                    & (wpoints[..., 0] < 1)
+                    & (wpoints[..., 1] > -1)
+                    & (wpoints[..., 1] < 1)
+                )
                 mask_0 = mask_0.reshape([frame_dims[0], frame_dims[1], 1])
-                rec0 = frame_left.pixels(
-                    wpoints
-                ).reshape([frame_dims[0], frame_dims[1], frame_left.n_channels])
+                rec0 = frame_left.pixels(wpoints).reshape(
+                    [frame_dims[0], frame_dims[1], frame_left.n_channels]
+                )
                 mask_0 = mask_0.to(rec0.device)
 
-                landmark_tgt_warped, _ = warp_points(warp_net, grid, right_t-t)
+                landmark_tgt_warped, _ = warp_points(warp_net, grid, right_t - t)
                 wpoints = landmark_tgt_warped
-                mask_1 = (wpoints[..., 0] > -1) & (wpoints[..., 0] < 1) & (wpoints[..., 1] > -1) & (wpoints[..., 1] < 1)
+                mask_1 = (
+                    (wpoints[..., 0] > -1)
+                    & (wpoints[..., 0] < 1)
+                    & (wpoints[..., 1] > -1)
+                    & (wpoints[..., 1] < 1)
+                )
                 mask_1 = mask_1.reshape([frame_dims[0], frame_dims[1], 1])
 
-                rec1 = frame_right.pixels(
-                    wpoints
-                ).reshape([frame_dims[0], frame_dims[1], frame_right.n_channels])
+                rec1 = frame_right.pixels(wpoints).reshape(
+                    [frame_dims[0], frame_dims[1], frame_right.n_channels]
+                )
 
                 mask_1 = mask_1.to(rec1.device)
 
@@ -801,20 +847,26 @@ def create_morphing(
                 blending_type=blending_type,
                 mask_0=mask_0,
                 mask_1=mask_1,
-                )
+            )
             rec = cv2.cvtColor(rec, cv2.COLOR_RGB2BGR)
             cv2.putText(
-                img=rec, text='Time = %.2f' % (t.item()), org=(0, 30),
-                fontFace=cv2.FONT_HERSHEY_TRIPLEX, fontScale=0.5,
-                color=(255, 255, 255), thickness=1
+                img=rec,
+                text="Time = %.2f" % (t.item()),
+                org=(0, 30),
+                fontFace=cv2.FONT_HERSHEY_TRIPLEX,
+                fontScale=0.5,
+                color=(255, 255, 255),
+                thickness=1,
             )
 
             if overlay_landmarks:
-                for c, pts, ts in zip([(255, 0, 0), (0, 255, 255)], [landmark_src, landmark_tgt], [t, t-1]):
+                for c, pts, ts in zip(
+                    [(255, 0, 0), (0, 255, 255)],
+                    [landmark_src, landmark_tgt],
+                    [t, t - 1],
+                ):
                     y, _ = warp_points(
-                        warp_net,
-                        torch.Tensor(pts).to(device).float(),
-                        ts
+                        warp_net, torch.Tensor(pts).to(device).float(), ts
                     )
                     y = y.detach().cpu().numpy()
                     rec = plot_landmarks(rec, y, c=c, r=4)
@@ -824,20 +876,20 @@ def create_morphing(
 
 
 def create_node_morphing(
-        warp_net: torch.nn.Module,
-        frame0: torch.nn.Module,
-        frame1: torch.nn.Module,
-        output_path: str,
-        frame_dims: tuple,
-        n_frames: int,
-        fps: int,
-        device: torch.device,
-        landmark_src,
-        landmark_tgt,
-        overlay_landmarks=True,
-        blending_type="linear",
-        frame_collection: List[torch.nn.Module]=None,
-        edge_mask=False
+    warp_net: torch.nn.Module,
+    frame0: torch.nn.Module,
+    frame1: torch.nn.Module,
+    output_path: str,
+    frame_dims: tuple,
+    n_frames: int,
+    fps: int,
+    device: torch.device,
+    landmark_src,
+    landmark_tgt,
+    overlay_landmarks=True,
+    blending_type="linear",
+    frame_collection: List[torch.nn.Module] = None,
+    edge_mask=False,
 ):
     """Creates a video file given a model and output path.
 
@@ -905,11 +957,12 @@ def create_node_morphing(
     times = np.arange(t1, t2, (t2 - t1) / n_frames)
     grid = get_grid(frame_dims).to(device).requires_grad_(False)
 
-    print(f"Doing morphing with parameters | n_frames: {n_frames} | fps: {fps} | continuousp {continuousp} | frame0 {frame0} ")
-    out = cv2.VideoWriter(output_path,
-                          cv2.VideoWriter_fourcc(*"mp4v"),
-                          fps,
-                          frame_dims[::-1], True)
+    print(
+        f"Doing morphing with parameters | n_frames: {n_frames} | fps: {fps} | continuousp {continuousp} | frame0 {frame0} "
+    )
+    out = cv2.VideoWriter(
+        output_path, cv2.VideoWriter_fourcc(*"mp4v"), fps, frame_dims[::-1], True
+    )
 
     with torch.no_grad():
         if isinstance(landmark_src, torch.Tensor):
@@ -923,9 +976,9 @@ def create_node_morphing(
             landmark_tgt = torch.Tensor(landmark_tgt).to(device).float()
 
         _times = torch.tensor(times).to(device).float()
-        warped_src = warp_net(-_times, grid)#.detach().cpu().numpy()
+        warped_src = warp_net(-_times, grid)  # .detach().cpu().numpy()
         mark_src = warp_net(_times, landmark_src).detach().cpu().numpy()
-        warped_tgt = warp_net(_times, grid)#.detach().cpu().numpy()
+        warped_tgt = warp_net(_times, grid)  # .detach().cpu().numpy()
         mark_tgt = warp_net(-_times, landmark_tgt).detach().cpu().numpy()
 
         for i, t in enumerate(times):
@@ -940,16 +993,16 @@ def create_node_morphing(
 
             landmark_src_warped = warped_src[i]
             wpoints = landmark_src_warped
-            rec0 = frame_left.pixels(
-                wpoints
-            ).reshape([frame_dims[0], frame_dims[1], frame_left.n_channels])
+            rec0 = frame_left.pixels(wpoints).reshape(
+                [frame_dims[0], frame_dims[1], frame_left.n_channels]
+            )
 
-            landmark_tgt_warped = warped_tgt[-1-i]
+            landmark_tgt_warped = warped_tgt[-1 - i]
             wpoints = landmark_tgt_warped
 
-            rec1 = frame_right.pixels(
-                wpoints
-            ).reshape([frame_dims[0], frame_dims[1], frame_right.n_channels])
+            rec1 = frame_right.pixels(wpoints).reshape(
+                [frame_dims[0], frame_dims[1], frame_right.n_channels]
+            )
 
             blending_coeff = (t - left_t) / (right_t - left_t)
             if not edge_mask:
@@ -962,37 +1015,41 @@ def create_node_morphing(
                 blending_type=blending_type,
                 mask_0=mask_0,
                 mask_1=mask_1,
-                )
+            )
             rec = cv2.cvtColor(rec, cv2.COLOR_RGB2BGR)
             cv2.putText(
-                img=rec, text='Time = %.2f' % (t.item()), org=(0, 30),
-                fontFace=cv2.FONT_HERSHEY_TRIPLEX, fontScale=0.5,
-                color=(255, 255, 255), thickness=1
+                img=rec,
+                text="Time = %.2f" % (t.item()),
+                org=(0, 30),
+                fontFace=cv2.FONT_HERSHEY_TRIPLEX,
+                fontScale=0.5,
+                color=(255, 255, 255),
+                thickness=1,
             )
 
             if overlay_landmarks:
                 rec = plot_landmarks(rec, mark_src[i], c=(255, 0, 0), r=4)
-                rec = plot_landmarks(rec, mark_tgt[-1-i], c=(0, 255, 255), r=4)
+                rec = plot_landmarks(rec, mark_tgt[-1 - i], c=(0, 255, 255), r=4)
 
             out.write(rec)
     out.release()
 
 
 def create_time_morphing(
-        warp_net: torch.nn.Module,
-        frame0: torch.nn.Module,
-        frame1: torch.nn.Module,
-        output_path: str,
-        frame_dims: tuple,
-        n_frames: int,
-        fps: int,
-        device: torch.device,
-        landmark_src,
-        landmark_tgt,
-        overlay_landmarks=True,
-        blending_type="linear",
-        frame_collection: List[torch.nn.Module]=None,
-        edge_mask=False
+    warp_net: torch.nn.Module,
+    frame0: torch.nn.Module,
+    frame1: torch.nn.Module,
+    output_path: str,
+    frame_dims: tuple,
+    n_frames: int,
+    fps: int,
+    device: torch.device,
+    landmark_src,
+    landmark_tgt,
+    overlay_landmarks=True,
+    blending_type="linear",
+    frame_collection: List[torch.nn.Module] = None,
+    edge_mask=False,
 ):
     """Creates a video file given a model and output path.
 
@@ -1061,14 +1118,23 @@ def create_time_morphing(
     # frame_dims = (*frame_dims, 1)
     x_grid = torch.linspace(-1, 1, frame_dims[0])
     y_grid = torch.linspace(-1, 1, frame_dims[1])
-    grid0 = torch.cartesian_prod(torch.zeros(1), x_grid,y_grid).to(device).requires_grad_(False)
-    grid1 = torch.cartesian_prod(torch.ones(1), x_grid,y_grid).to(device).requires_grad_(False)
+    grid0 = (
+        torch.cartesian_prod(torch.zeros(1), x_grid, y_grid)
+        .to(device)
+        .requires_grad_(False)
+    )
+    grid1 = (
+        torch.cartesian_prod(torch.ones(1), x_grid, y_grid)
+        .to(device)
+        .requires_grad_(False)
+    )
 
-    print(f"Doing morphing with parameters | n_frames: {n_frames} | fps: {fps} | continuousp {continuousp} | frame0 {frame0} ")
-    out = cv2.VideoWriter(output_path,
-                          cv2.VideoWriter_fourcc(*"mp4v"),
-                          fps,
-                          frame_dims[::-1], True)
+    print(
+        f"Doing morphing with parameters | n_frames: {n_frames} | fps: {fps} | continuousp {continuousp} | frame0 {frame0} "
+    )
+    out = cv2.VideoWriter(
+        output_path, cv2.VideoWriter_fourcc(*"mp4v"), fps, frame_dims[::-1], True
+    )
 
     with torch.no_grad():
         if isinstance(landmark_src, torch.Tensor):
@@ -1080,8 +1146,6 @@ def create_time_morphing(
             landmark_tgt = landmark_tgt.clone().detach()
         else:
             landmark_tgt = torch.Tensor(landmark_tgt).to(device).float()
-
-
 
         for t in times:
             mask_0 = None
@@ -1097,28 +1161,38 @@ def create_time_morphing(
 
             if continuousp:
                 rec0, _ = warp_shapenet_inference(
-                    grid0, left_t-t, warp_net, frame_left, frame_dims
+                    grid0, left_t - t, warp_net, frame_left, frame_dims
                 )
                 rec1, _ = warp_shapenet_inference(
-                    grid1, right_t-t, warp_net, frame_right, frame_dims
+                    grid1, right_t - t, warp_net, frame_right, frame_dims
                 )
             else:
-                wpoints, _ = time_warp_points(warp_net, grid1, left_t-t)
-                mask_0 = (wpoints[..., 0] > -1) & (wpoints[..., 0] < 1) & (wpoints[..., 1] > -1) & (wpoints[..., 1] < 1)
+                wpoints, _ = time_warp_points(warp_net, grid1, left_t - t)
+                mask_0 = (
+                    (wpoints[..., 0] > -1)
+                    & (wpoints[..., 0] < 1)
+                    & (wpoints[..., 1] > -1)
+                    & (wpoints[..., 1] < 1)
+                )
                 mask_0 = mask_0.reshape([frame_dims[0], frame_dims[1], 1])
 
-                rec0 = frame_left.pixels(
-                    wpoints
-                ).reshape([frame_dims[0], frame_dims[1], frame_left.n_channels])
+                rec0 = frame_left.pixels(wpoints).reshape(
+                    [frame_dims[0], frame_dims[1], frame_left.n_channels]
+                )
                 mask_0 = mask_0.to(rec0.device)
 
-                wpoints, _ = time_warp_points(warp_net, grid0, right_t-t)
-                mask_1 = (wpoints[..., 0] > -1) & (wpoints[..., 0] < 1) & (wpoints[..., 1] > -1) & (wpoints[..., 1] < 1)
+                wpoints, _ = time_warp_points(warp_net, grid0, right_t - t)
+                mask_1 = (
+                    (wpoints[..., 0] > -1)
+                    & (wpoints[..., 0] < 1)
+                    & (wpoints[..., 1] > -1)
+                    & (wpoints[..., 1] < 1)
+                )
                 mask_1 = mask_1.reshape([frame_dims[0], frame_dims[1], 1])
 
-                rec1 = frame_right.pixels(
-                    wpoints
-                ).reshape([frame_dims[0], frame_dims[1], frame_right.n_channels])
+                rec1 = frame_right.pixels(wpoints).reshape(
+                    [frame_dims[0], frame_dims[1], frame_right.n_channels]
+                )
 
                 mask_1 = mask_1.to(rec1.device)
 
@@ -1126,20 +1200,33 @@ def create_time_morphing(
             if not edge_mask:
                 mask_0 = None
                 mask_1 = None
-            rec = blend_frames(rec0, rec1, blending_coeff, blending_type=blending_type, mask_0=mask_0, mask_1=mask_1)
+            rec = blend_frames(
+                rec0,
+                rec1,
+                blending_coeff,
+                blending_type=blending_type,
+                mask_0=mask_0,
+                mask_1=mask_1,
+            )
             rec = cv2.cvtColor(rec, cv2.COLOR_RGB2BGR)
             cv2.putText(
-                img=rec, text='Time = %.2f' % (t.item()), org=(0, 30),
-                fontFace=cv2.FONT_HERSHEY_TRIPLEX, fontScale=0.5,
-                color=(255, 255, 255), thickness=1
+                img=rec,
+                text="Time = %.2f" % (t.item()),
+                org=(0, 30),
+                fontFace=cv2.FONT_HERSHEY_TRIPLEX,
+                fontScale=0.5,
+                color=(255, 255, 255),
+                thickness=1,
             )
 
             if overlay_landmarks:
-                for c, pts, ts in zip([(255, 0, 0), (0, 255, 255)], [landmark_src, landmark_tgt], [t, t-1]):
+                for c, pts, ts in zip(
+                    [(255, 0, 0), (0, 255, 255)],
+                    [landmark_src, landmark_tgt],
+                    [t, t - 1],
+                ):
                     y, _ = warp_points(
-                        warp_net,
-                        torch.Tensor(pts).to(device).float(),
-                        ts
+                        warp_net, torch.Tensor(pts).to(device).float(), ts
                     )
                     y = y.detach().cpu().numpy()
                     rec = plot_landmarks(rec, y, c=c, r=4)
@@ -1151,11 +1238,11 @@ def create_time_morphing(
 def grid_image(coords):
     N = 8
     M = 8
-    x = coords[..., 0].unsqueeze(-1)*N
-    y = coords[..., 1].unsqueeze(-1)*M
+    x = coords[..., 0].unsqueeze(-1) * N
+    y = coords[..., 1].unsqueeze(-1) * M
 
-    colors = torch.exp(-(x - torch.floor(x))**2/0.001)
-    colors += torch.exp(-(y - torch.floor(y))**2/0.001)
+    colors = torch.exp(-((x - torch.floor(x)) ** 2) / 0.001)
+    colors += torch.exp(-((y - torch.floor(y)) ** 2) / 0.001)
     colors = 1 - torch.clamp(colors, 0, 1)
 
     return colors
@@ -1193,8 +1280,13 @@ def image_inference(model, grid_dims, device=torch.device("cpu")):
     grid = get_grid(grid_dims).to(device)
 
     with torch.no_grad():
-        img = (model(grid)["model_out"].detach().clamp(0, 1) * 255)
-        img = img.cpu().reshape((grid_dims[0], grid_dims[1], n_channels)).numpy().astype(np.uint8)
+        img = model(grid)["model_out"].detach().clamp(0, 1) * 255
+        img = (
+            img.cpu()
+            .reshape((grid_dims[0], grid_dims[1], n_channels))
+            .numpy()
+            .astype(np.uint8)
+        )
 
     return img
 
@@ -1207,64 +1299,94 @@ def get_landmarks(face_mesh, img):
     larndmarks_np = np.array(landmarks_list)
 
     dict_face = {
-        'silhouette': [
-            10,  338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288,
-            397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136,
-            172, 58,  132, 93,  234, 127, 162, 21,  54,  103, 67,  109
+        "silhouette": [
+            10,
+            338,
+            297,
+            332,
+            284,
+            251,
+            389,
+            356,
+            454,
+            323,
+            361,
+            288,
+            397,
+            365,
+            379,
+            378,
+            400,
+            377,
+            152,
+            148,
+            176,
+            149,
+            150,
+            136,
+            172,
+            58,
+            132,
+            93,
+            234,
+            127,
+            162,
+            21,
+            54,
+            103,
+            67,
+            109,
         ],
-
-        'lipsUpperOuter':  [61, 185, 40, 39, 37, 0, 267, 269, 270, 409, 291],
-        'lipsLowerOuter': [146, 91, 181, 84, 17, 314, 405, 321, 375, 291],
-        'lipsUpperInner': [78, 191, 80, 81, 82, 13, 312, 311, 310, 415, 308],
-        'lipsLowerInner': [78, 95, 88, 178, 87, 14, 317, 402, 318, 324, 308],
-
-        'rightEyeUpper0': [246, 161, 160, 159, 158, 157, 173],
-        'rightEyeLower0': [33, 7, 163, 144, 145, 153, 154, 155, 133],
+        "lipsUpperOuter": [61, 185, 40, 39, 37, 0, 267, 269, 270, 409, 291],
+        "lipsLowerOuter": [146, 91, 181, 84, 17, 314, 405, 321, 375, 291],
+        "lipsUpperInner": [78, 191, 80, 81, 82, 13, 312, 311, 310, 415, 308],
+        "lipsLowerInner": [78, 95, 88, 178, 87, 14, 317, 402, 318, 324, 308],
+        "rightEyeUpper0": [246, 161, 160, 159, 158, 157, 173],
+        "rightEyeLower0": [33, 7, 163, 144, 145, 153, 154, 155, 133],
         # rightEyeUpper1: [247, 30, 29, 27, 28, 56, 190],
         # rightEyeLower1: [130, 25, 110, 24, 23, 22, 26, 112, 243],
         # rightEyeUpper2: [113, 225, 224, 223, 222, 221, 189],
         # rightEyeLower2: [226, 31, 228, 229, 230, 231, 232, 233, 244],
         # rightEyeLower3: [143, 111, 117, 118, 119, 120, 121, 128, 245],
-
-        'rightEyebrowUpper': [156, 70, 63, 105, 66, 107, 55, 193],
+        "rightEyebrowUpper": [156, 70, 63, 105, 66, 107, 55, 193],
         # "rightEyebrowLower": [35, 124, 46, 53, 52, 65],
-
         # 'rightEyeIris': [473, 474, 475, 476, 477],
-
-        'leftEyeUpper0': [466, 388, 387, 386, 385, 384, 398],
-        'leftEyeLower0': [263, 249, 390, 373, 374, 380, 381, 382, 362],
+        "leftEyeUpper0": [466, 388, 387, 386, 385, 384, 398],
+        "leftEyeLower0": [263, 249, 390, 373, 374, 380, 381, 382, 362],
         # "leftEyeUpper1": [467, 260, 259, 257, 258, 286, 414],
         # "leftEyeLower1": [359, 255, 339, 254, 253, 252, 256, 341, 463],
         # "leftEyeUpper2": [342, 445, 444, 443, 442, 441, 413],
         # "leftEyeLower2": [446, 261, 448, 449, 450, 451, 452, 453, 464],
         # "leftEyeLower3": [372, 340, 346, 347, 348, 349, 350, 357, 465],
-
-        'leftEyebrowUpper': [383, 300, 293, 334, 296, 336, 285, 417],
+        "leftEyebrowUpper": [383, 300, 293, 334, 296, 336, 285, 417],
         # "leftEyebrowLower": [265, 353, 276, 283, 282, 295],
-
         # 'leftEyeIris': [468, 469, 470, 471, 472],
-
-        'midwayBetweenEyes': [168],
-
-        'noseTip': [1],
-        'noseBottom': [2],
-        'noseRightCorner': [98],
-        'noseLeftCorner': [327],
-
-        'rightCheek': [205],
-        'leftCheek': [425]
+        "midwayBetweenEyes": [168],
+        "noseTip": [1],
+        "noseBottom": [2],
+        "noseRightCorner": [98],
+        "noseLeftCorner": [327],
+        "rightCheek": [205],
+        "leftCheek": [425],
     }
 
     list_final = []
-    for (k, v) in dict_face.items():
+    for k, v in dict_face.items():
         list_final = list_final + v
 
     return larndmarks_np[list_final]
 
 
-def get_landmark_correspondences(frame0, frame1, frame_dims,
-                                 src_pts=None, tgt_pts=None, device="cuda:0",
-                                 method=None, open_ui=True):
+def get_landmark_correspondences(
+    frame0,
+    frame1,
+    frame_dims,
+    src_pts=None,
+    tgt_pts=None,
+    device="cuda:0",
+    method=None,
+    open_ui=True,
+):
     """Opens the `FaceInteractor` UI to get the landmark correspondences
     between `frame0` and `frame1`.
 
@@ -1314,8 +1436,11 @@ def get_landmark_correspondences(frame0, frame1, frame_dims,
         The normalized landmarks for `frame1`, in range [-1, 1]
     """
     if method is None or not len(method) and not open_ui:
-        print(f"\"method\" is \"{method}\" and open_ui is False. This is an"
-              " expensive no-op. Bailing out.", file=sys.stderr)
+        print(
+            f'"method" is "{method}" and open_ui is False. This is an'
+            " expensive no-op. Bailing out.",
+            file=sys.stderr,
+        )
         return [], []
 
     dims = (frame_dims[0], frame_dims[1], 3)
@@ -1353,16 +1478,13 @@ def get_landmark_correspondences(frame0, frame1, frame_dims,
                 landmark_src = get_landmarks(fm, frame0)
                 landmark_tgt = get_landmarks(fm, frame1)
         else:
-            raise ValueError(f"Landmark method \"{method}\" not recognized."
-                             " Aborting.")
+            raise ValueError(f'Landmark method "{method}" not recognized.' " Aborting.")
 
         # Need to return to original coordinates
         landmark_src = landmark_src * 2 - 1
         landmark_tgt = landmark_tgt * 2 - 1
 
-    p = FaceInteractor(
-        frame0, frame1, src_pts=landmark_src, tgt_pts=landmark_tgt
-    )
+    p = FaceInteractor(frame0, frame1, src_pts=landmark_src, tgt_pts=landmark_tgt)
     plt.show()
 
     return p.landmarks
@@ -1379,7 +1501,7 @@ def test_mediapipe_landmark_detection(img):
     landmarks = landmarks.astype(int)
 
     for p in landmarks:
-        im_landmarks[p[0]-1:p[0]+1, p[1]-1:p[1]+1] = (0, 255, 0)
+        im_landmarks[p[0] - 1 : p[0] + 1, p[1] - 1 : p[1] + 1] = (0, 255, 0)
     return im_landmarks
 
 
@@ -1387,7 +1509,7 @@ def test_dlib_landmark_detection(img):
     im_landmarks = img.copy()
     landmarks = get_landmarks_dlib(img)
     for p in landmarks:
-        im_landmarks[p[1]-1:p[1]+1, p[0]-1:p[0]+1] = (0, 255, 0)
+        im_landmarks[p[1] - 1 : p[1] + 1, p[0] - 1 : p[0] + 1] = (0, 255, 0)
     return im_landmarks
 
 
