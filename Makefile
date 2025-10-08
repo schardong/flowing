@@ -32,3 +32,8 @@ results/001_002-ncf-good_manual_landmarks/weights.pth: data/frll_neutral_front l
 
 results/sandy_frll-002_ncf/weights.pth:
 	@python ncf-warp-train.py --device cuda:0 --no-ui experiments/faces/sandy_frll-002_ncf.yaml
+
+test-lm-detect-parallel: data/frll_neutral_front
+	python standalone/detect-face-landmarks.py data/frll_neutral_front/*.jpg --saveim --plot-landmarks --output-path tmp/detect-face-lms --n-tasks 4
+
+.PHONY: test-lm-detect-parallel

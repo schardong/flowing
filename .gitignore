@@ -210,3 +210,5 @@ __marimo__/
 
 data/
 landmark_models/
+results/
+tmp/

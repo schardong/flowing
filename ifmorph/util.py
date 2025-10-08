@@ -1581,7 +1581,7 @@ def get_default_argumentparser() -> argparse.ArgumentParser:
     return parser
 
 
-def get_device(desired_dev, backup_dev):
+def get_device(desired_dev, backup_dev: str = "cpu"):
     devstr = ""
     if desired_dev:
         devstr = desired_dev
