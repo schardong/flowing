@@ -1,13 +1,15 @@
-description: neural_ode_training
 device: cuda:0
-experiment_name: 001_002-node-good_manual_landmarks
-initial_conditions:
-  '0': data/frll_neutral_front/001_03.jpg
-  '1': data/frll_neutral_front/002_03.jpg
 loss:
   constraint_weights:
     jacobian_loss_weight: 1
     matching_loss_weight: 1024
+  timesteps:
+  - 0.0
+  - 0.125
+  - 0.25
+  - 0.375
+  - 0.5
+  type: neural_ode_loss
   sources:
   - - -0.07749708741903305
     - 0.010512054897844791
@@ -430,13 +432,6 @@ loss:
   - - 0.020608771592378616
     - 0.035394344478845596
     - 0.004158195108175278
-  timesteps:
-  - 0.0
-  - 0.125
-  - 0.25
-  - 0.375
-  - 0.5
-  type: neural_ode_loss
 network:
   autonomous: true
   dim: 3
@@ -447,18 +442,8 @@ network:
   width: 128
 optimizer:
   lr: 1e-2
-reconstruct:
-  fps: 20
-  frame_dims:
-  - 1024
-  - 1024
-  n_frames: 101
-  timerange:
-  - -1.0
-  - 1.0
 training:
   checkpoint_steps: 5000
   n_samples: 20000
-  n_steps: 10000000
-  reconstruction_steps: 10000
+  n_steps: 20001
   warmup_steps: 1000

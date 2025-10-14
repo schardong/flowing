@@ -1,22 +1,19 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import argparse
 from copy import deepcopy
 from enum import Enum
 from multiprocessing import Pool
 import os
 import os.path as osp
 import random
-import sys
 import numpy as np
 import pandas as pd
 import torch
 from torch.utils.tensorboard import SummaryWriter
 import yaml
-from ifmorph.dataset import WarpingDataset, Warping3DDataset
+from ifmorph.dataset import WarpingDataset
 from ifmorph.loss_functions import NeuralODELoss
-from ifmorph.model import NearIdSIREN
 from ifmorph.neural_odes import NeuralODE
 from ifmorph.util import (
     create_node_morphing,
@@ -24,7 +21,6 @@ from ifmorph.util import (
     get_default_argumentparser,
     get_device,
 )
-from tqdm import tqdm
 
 
 class LoggerType(Enum):
@@ -66,22 +62,30 @@ def train_warping(experiment_config_path, output_path, args):
             os.makedirs(summary_path)
         writer = SummaryWriter(summary_path)
 
+    early_stopping = args.early_stopping is not None and args.early_stopping
+    config["training"]["early_stop"] = early_stopping
+
     with open(osp.join(output_path, "config.yaml"), "w") as fout:
         yaml.dump(config, fout)
 
     device = get_device(args.device, config.get("device", "cuda:0"))
 
-    # ------- processing the input files ------- #
-    initial_conditions = [(v, k) for k, v in config["initial_conditions"].items()]
-    if len(initial_conditions) < 2:
-        raise ValueError(
-            "The provided config file should contain at least 2 images as"
-            " initial conditions"
-        )
+    # ------- processing the input files (only necessary for images) ------- #
+    network_config = config["network"]
+    input_dims = network_config.get("dim", 2)
 
-    data = WarpingDataset(
-        initial_conditions, num_samples=config["training"]["n_samples"], device=device
-    )
+    if input_dims == 2:
+        initial_conditions = [(v, k) for k, v in config["initial_conditions"].items()]
+        if len(initial_conditions) < 2:
+            raise ValueError(
+                "The provided config file should contain at least 2 objects as"
+                " initial conditions"
+            )
+        data = WarpingDataset(
+            initial_conditions,
+            num_samples=config["training"]["n_samples"],
+            device=device,
+        )
 
     loss_config = config["loss"]
     training_config = config["training"]
@@ -90,42 +94,42 @@ def train_warping(experiment_config_path, output_path, args):
 
     warmup_steps = training_config["n_steps"]
     checkpoint_steps = training_config.get("checkpoint_steps", None)
-    reconstruct_config = config["reconstruct"]
-    n_frames = reconstruct_config.get("n_frames", 100)
-    fps = reconstruct_config.get("fps", 10)
-    grid_dims = reconstruct_config.get("frame_dims", (320, 320))
+    if input_dims == 2:
+        reconstruct_config = config["reconstruct"]
+        n_frames = reconstruct_config.get("n_frames", 100)
+        fps = reconstruct_config.get("fps", 10)
+        grid_dims = reconstruct_config.get("frame_dims", (320, 320))
 
     # ------- creating the correspondences ------- #
     src, tgt = None, None
-    for i in range(len(data.initial_conditions) - 1):
-        if f"points_{i}" not in loss_config or f"points_{i+1}" not in loss_config:
-            src, tgt, _, _ = get_landmark_correspondences(
-                data.initial_states[i],
-                data.initial_states[i + 1],
-                grid_dims,
-                device=device,
-                open_ui=not args.no_ui,
-            )
-        elif isinstance(loss_config[f"points_{i}"], str) or isinstance(
-            loss_config[f"points_{i+1}"], str
-        ):
-            with open(loss_config[f"points_{i}"], "r") as fin:
-                src = np.array(yaml.safe_load(fin))
+    srckey = "sources"
+    tgtkey = "targets"
+    # Some of our experiments used ("sources", "targets"), while others used
+    # ("points_0", "points_1"). Here we try to (naively) check which pair of
+    # keys is used.
+    if srckey not in loss_config or tgtkey not in loss_config:
+        srckey = "points_0"
+        tgtkey = "points_1"
+        if srckey not in loss_config or tgtkey not in loss_config:
+            raise ValueError("Missing warping landmarks sources or targets.")
 
-            with open(loss_config[f"points_{i+1}"], "r") as fin:
-                tgt = np.array(yaml.safe_load(fin))
-        else:
-            src = np.array(loss_config[f"points_{i}"])
-            tgt = np.array(loss_config[f"points_{i+1}"])
+    if isinstance(loss_config[srckey], str) or isinstance(loss_config[tgtkey], str):
+        with open(loss_config[srckey], "r") as fin:
+            src = np.array(yaml.safe_load(fin))
 
-        src = torch.Tensor(src).float().to(device)
-        tgt = torch.Tensor(tgt).float().to(device)
+        with open(loss_config[tgtkey], "r") as fin:
+            tgt = np.array(yaml.safe_load(fin))
+    else:
+        src = np.array(loss_config[srckey])
+        tgt = np.array(loss_config[tgtkey])
+
+    src = torch.Tensor(src).float().to(device)
+    tgt = torch.Tensor(tgt).float().to(device)
 
     with open(osp.join(output_path, "config.yaml"), "w") as fout:
         yaml.dump(config, fout)
 
     # ------- constructing the model ------- #
-    network_config = config["network"]
     network_config["internal_network_type"] = network_config.get(
         "internal_network_type", "siren"
     )
@@ -152,9 +156,8 @@ def train_warping(experiment_config_path, output_path, args):
     )
 
     # ---------- loss setup ----------#
-    dims = network_config.get("dim", 2)
     _grid = torch.linspace(-1, 1, 100)
-    grid = torch.cartesian_prod(*[_grid] * dims).to(device)
+    grid = torch.cartesian_prod(*[_grid] * input_dims).to(device)
 
     constraint_weights = loss_config.get("constraint_weights", None)
     for k, v in constraint_weights.items():
@@ -171,8 +174,9 @@ def train_warping(experiment_config_path, output_path, args):
     ).to(device)
 
     # ---------- training ----------#
-    # best_loss = np.inf
-    # best_step = warmup_steps
+    patience = 0
+    best_loss = np.inf
+    best_step = warmup_steps
     training_loss = {}
     for step in range(training_steps + 1):
         loss = loss_func(model, src, tgt, grid)
@@ -193,21 +197,19 @@ def train_warping(experiment_config_path, output_path, args):
 
             writer.add_scalar("train_loss/total_loss", running_loss.item(), step)
 
+        if best_loss > running_loss.item():
+            patience = 0
+            best_step = step
+            best_loss = running_loss.item()
+            best_weights = deepcopy(model.state_dict())
+        else:
+            patience += 1
+            if early_stopping and patience > args.patience:
+                print(f'Stopping early at step "{step}".')
+                break
+
         if not step % 1000:
-            try:
-                print(
-                    step,
-                    running_loss.item(),
-                    config["initial_conditions"]["0"],
-                    config["initial_conditions"]["1"],
-                )
-            except KeyError:
-                print(
-                    step,
-                    running_loss.item(),
-                    config["initial_conditions"][0],
-                    config["initial_conditions"][1],
-                )
+            print(step, running_loss.item())
 
         if checkpoint_steps is not None and step > 0 and not step % checkpoint_steps:
             torch.save(
@@ -216,7 +218,8 @@ def train_warping(experiment_config_path, output_path, args):
             )
 
         if (
-            reconstruction_steps is not None
+            input_dims == 2
+            and reconstruction_steps is not None
             and step > 0
             and not step % reconstruction_steps
         ):
@@ -261,7 +264,9 @@ def train_warping(experiment_config_path, output_path, args):
         scheduler.step(running_loss)
 
     print("Training done. Losses:", loss)
+    print(f"Best results at step {best_step}, with loss {best_loss}.")
     print("Max mismatch t=1/2:", matching_error.sqrt())
+    print(f"Saving the results in folder {output_path}.")
 
     if logger_type == LoggerType.TENSORBOARD:
         writer.add_scalar(
@@ -275,10 +280,14 @@ def train_warping(experiment_config_path, output_path, args):
     with torch.no_grad():
         torch.save(model.state_dict(), osp.join(output_path, "weights.pth"))
 
+    model.load_state_dict(best_weights)
+    with torch.no_grad():
+        torch.save(model.state_dict(), osp.join(output_path, "best.pth"))
+
     loss_df = pd.DataFrame.from_dict(training_loss)
     loss_df.to_csv(osp.join(output_path, "loss.csv"), sep=";")
 
-    if not args.no_reconstruction:
+    if not args.no_reconstruction and input_dims == 2:
         print("Running the inference for the morphing.")
         with torch.no_grad():
             create_node_morphing(
@@ -315,6 +324,19 @@ def train_warping(experiment_config_path, output_path, args):
 
 if __name__ == "__main__":
     parser = get_default_argumentparser()
+    parser.add_argument(
+        "--early-stopping",
+        action="store_true",
+        default=False,
+        help="Whether to use early stopping when training stop converging.",
+    )
+    parser.add_argument(
+        "--patience",
+        default=1000,
+        type=float,
+        help="Patience for the early stopping. By default is set to 1000. Has"
+        ' no effect if "--early-stopping" is not passed."',
+    )
     args = parser.parse_args()
 
     # print all args:
