@@ -6,7 +6,7 @@ body {
     margin-right: auto;
     max-width: 900px;
     width: 100%;
-    background-color: #eeeeee;
+    /* background-color: #eeeeee; */
 }
 
 @media (max-width: 768px) {
@@ -59,7 +59,7 @@ section {
     margin: 32px 10px 32px 10px;
     text-align: justify;
     clear: both;
-    color: #121212;
+    /* color: #121212; */
     font-size: 18px;
 }
 .col-5 {
@@ -80,7 +80,7 @@ section {
 }
 .row, .author-row, .affil-row {
      overflow: auto;
-     color: #121212;
+     /* color: #121212; */
 }
 .author-row, .affil-row {
     font-size: 18px;
@@ -171,7 +171,7 @@ figure {
 }
 #bibtex pre {
     font-size: 14px;
-    background-color: #dddddd;
+    background-color: #eeeeee;
     padding: 16px;
 }
 .blue {
@@ -271,7 +271,7 @@ sub.black {
     color:#000000;
 }
 code {
-    background-color: #dddddd;
+    background-color: #eeeeee;
 }
 
 .quote {
