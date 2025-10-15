@@ -21,7 +21,7 @@
 <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
 
 <body>
-<div class="container">
+  <div class="container">
     <div class="paper-title">
       <h1>FLOWING &#127754: Implicit Neural Flows <br/> for Structure-Preserving Morphing</h1>
     </div>
@@ -68,60 +68,29 @@
         </div>
       </div>
     </div>
-</div>
+  </div>
 
-    <section id="teaser-videos">
-        <!--
-        <figure style="width: 33%; float: left">
-            <p class="caption_bold">
-                Coarse
-            </p>
-        </figure>
+  <section id="overview">
+    <h2>Overview</h2>
+    <hr>
+    <figure style="width: 100%; float: left">
+      <img style="width: 100%" src="assets/overview.png">
+    </figure>
+    <p>Given source and target images \(I^0, I^1\) we extract landmark pairs \((p^0_i,p^1_i)\) with a feature extractor. We train a flow \(\phi\) such that \(\phi(p^0,t) = \phi(p^1,t-1)\), effectively mapping \(p^0\) to \(p^1\). At inference, to blend the images at time \(t\), we warp \(I^0\) forward by \(t\) units and \(I^1\) and backward by \(t-1\) units, then blend them together with methods such as linear blending or generative models.</p>
+  </section>
 
-        <figure style="width: 33%; float: left">
-            <p class="caption_bold">
-                Neural Implicit Normal Mapping
-            </p>
-        </figure>
 
-        <figure style="width: 33%; float: left">
-            <p class="caption_bold">
-                Baseline
-            </p>
-        </figure>
-        -->
-
-        <!-- <figure style="width: 50%; float: left"> -->
-        <!--   <video class="centered" width="100%" autoplay muted loop playsinline> -->
-        <!--     <source src="assets/teaser_improved_twitter.mp4" type="video/mp4"> -->
-        <!--     Your browser does not support the video tag. -->
-        <!--   </video> -->
-        <!-- </figure> -->
-        <!-- <figure style="width: 50%; float: right"> -->
-        <!--   <video class="centered" width="100%" autoplay muted loop playsinline> -->
-        <!--     <source src="assets/women_teaser.mp4" type="video/mp4"> -->
-        <!--     Your browser does not support the video tag. -->
-        <!--   </video> -->
-        <!-- </figure> -->
-
-        <!-- <figure style="width: 100%; float: left"> -->
-        <!--   <p class="caption_justify"> -->
-        <!--     Results of morphings using our approach. On the left, a morphing between an image of Yann Lecun and an image of Geoffrey Hinton, also as a tribute for all the researchers that helped establish the field. On the right, a morphing between two images in the FRLL-Morphs dataset. Our approach takes landmarks into consideration, resulting in an aligment of the most important face features during the entire morphing process. -->
-        <!--   </p> -->
-        <!-- </figure> -->
-    </section>
-
-    <section id="news">
-      <h2>News</h2>
-      <hr>
-      <div class="row" style="width: 100%;">
-        <div><span class="material-icons"> description </span> [Sep 18th 2025] Paper accepted to #NeurIPS25.</div>
-        <div><span class="material-icons"> description </span> [Oct 14th 2025] Page online.</div>
-        <div><span class="material-icons"> description </span> [Oct 14th 2025] ArXiv paper online.</div>
-        <div><span class="material-icons"> description </span> [Oct 14th 2025] Source-code released.</div>
-        <br>
-      </div>
-    </section>
+    <!-- <section id="news"> -->
+    <!--   <h2>News</h2> -->
+    <!--   <hr> -->
+    <!--   <div class="row" style="width: 100%;"> -->
+    <!--     <div><span class="material-icons"> description </span> [Sep 18th 2025] Paper accepted to #NeurIPS25.</div> -->
+    <!--     <div><span class="material-icons"> description </span> [Oct 14th 2025] Page online.</div> -->
+    <!--     <div><span class="material-icons"> description </span> [Oct 14th 2025] ArXiv paper online.</div> -->
+    <!--     <div><span class="material-icons"> description </span> [Oct 14th 2025] Source-code released.</div> -->
+    <!--     <br> -->
+    <!--   </div> -->
+    <!-- </section> -->
 
     <section id="features" style="text-align: justify;">
       <h2>Features</h2>
@@ -146,25 +115,12 @@
 
     </section>
 
-    <!-- <section id="Method">
-        <h2>Method</h2>
-        <hr>
-
-        <p>To define the morphing, we disentangle the spatial deformation (warping), used to align the corresponding features along the time, from the blending of the resulting warped images. We parameterize the warping with a coordinate net and employ the thin-plate energy to force the transformations to minimize deformation. This is essential, because just applying a linear transformation may result in ghosting. See this comparison with OpenCV.</p>
-        <figure style="width: 80%; float: center">
-            <img style="width: 100%" src="assets/opencv.png">
-        </figure>
-
-        After the warping, we blend the warped target images. Our approach supports linear, Poisson, and generative blending.
-
-    </section> -->
-
     <section id="paper">
       <h2>Paper</h2>
       <hr>
       <div class="flex-row">
         <div style="box-sizing: border-box; padding: 16px; margin: auto;">
-          <a href="https://www.visgraf.impa.br/morph/Warping_and_Morphing_of_Images_using_Neural_Networks_LR.pdf"><img class="screenshot" src="assets/paper-thumbnail.png"></a>
+          <a href="assets/preprint.pdf"><img class="screenshot" src="assets/paper-thumbnail.png"></a>
         </div>
         <div style="width: 60%">
           <p><b>FLOWING &#127754: Implicit Neural Flows for Structure-Preserving Morphing</b></p>
@@ -179,14 +135,15 @@
     <section id="bibtex">
       <h2>Citation</h2>
       <hr>
-      <pre><code>@inproceedings{bizzi2025flowing,
-  title = {{FLOWING}: Implicit Neural Flows for Structure-Preserving Morphings},
-  author = {Bizzi, Arthur and Grynberg, Matias and Matias, Vitor and Perazzo, Daniel and
-          Lima, Jo\~{a}o and Velho, Luiz and Gon\c{c}alves, Nuno and Pereira, Jo\~{a}o and
-          Schardong, Guilherme and Novello, Tiago},
-  booktitle={The Thirty-ninth Annual Conference on Neural Information Processing Systems},
-  year = {2025},
-  url={https://openreview.net/forum?id=iHXCz8c204}
+      <pre><code>@misc{bizzi2025flowing,
+  title={{FLOWING}: Implicit Neural Flows for Structure-Preserving Morphing},
+  author={Arthur Bizzi and Matias Grynberg and Vitor Matias and Daniel Perazzo and João Paulo Lima
+    and Luiz Velho and Nuno Gonçalves and João Pereira and Guilherme Schardong and Tiago Novello},
+  year={2025},
+  eprint={2510.09537},
+  archivePrefix={arXiv},
+  primaryClass={cs.CV},
+  url={https://arxiv.org/abs/2510.09537},
 }</code></pre>
     </section>
 
