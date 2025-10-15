@@ -28,7 +28,9 @@
 
 This is the official implementation of "FLOWING 🌊: Implicit Neural Flows for Structure-Preserving Morphing", to appear on NeurIPS 2025. Meanwhile, check the [arXiv version](https://arxiv.org/abs/2510.09537). More results and examples in the [project page](https://schardong.github.io/flowing).
 
-![Overview of our method](docs/assets/overview.png)
+**Note that this repository is not ready yet!**
+
+![Capabilities of our method](docs/assets/teaser.png)
 
 ## Getting started
 
