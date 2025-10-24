@@ -36,4 +36,22 @@ results/sandy_frll-002_ncf/weights.pth:
 test-lm-detect-parallel: data/frll_neutral_front
 	python standalone/detect-face-landmarks.py data/frll_neutral_front/*.jpg --saveim --plot-landmarks --output-path tmp/detect-face-lms --n-tasks 4
 
+data/megadepth:
+	@echo "Downloading the MegaDepth dataset"
+	@gdown 12yKniNWebDHRTCwhBNJmxYMPgqYX3Nhv -O data/megadepth.tar
+	@tar -xvf data/megadepth.tar -C data/
+	@rm data/megadepth.tar
+	@echo "MegaDepth dataset downloaded"
+	@echo "Cropping MegaDepth images..."
+	@bash standalone/megadepth_generation/crop.sh 0015
+	@bash standalone/megadepth_generation/crop.sh 0022
+	@echo "MegaDepth images cropped"
+	@rm -rf data/megadepth_test_1500
+
+data/megadepth_pairs: data/megadepth
+	@echo "Preparing MegaDepth dataset for evaluation..."
+	@python standalone/megadepth_generation/pairing.py 0015
+	@python standalone/megadepth_generation/pairing.py 0022
+	@echo "MegaDepth dataset paired"
+
 .PHONY: test-lm-detect-parallel

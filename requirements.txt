@@ -14,3 +14,5 @@ torch>=2.6.0
 torchdiffeq>=0.2.5
 torchvision>=0.21.0
 tqdm>=4.67.1
+gdown
+scikit-learn
