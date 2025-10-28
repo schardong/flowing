@@ -1,5 +1,10 @@
 #!/bin/bash
 
+if [ $# -lt 1 ]; then
+    echo "usage: $(basename $0) RUN_ID"
+    exit 1
+fi
+
 # Directory containing the images
 id_of_the_run=$1
 INPUT_DIR="data/megadepth_test_1500/Undistorted_SfM/$id_of_the_run/images"

@@ -71,6 +71,19 @@ For Neural-ODEs, you can simply switch the traning script and configuration file
 python node-warp-train.py experiments/faces/001_002-node-good_manual_landmarks.yaml
 ```
 
+## Reproducing the experiments
+
+### Obtaining the datasets
+We've employed three datasets for our experiments, two image datasets, and a 3DGS dataset.
+* Face Research Lab London (FRLL)
+The FRLL dataset can be obtained in their page on [figshare](https://figshare.com/articles/dataset/Face_Research_Lab_London_Set/5047666/3). Simply download and extract the frontal facing neutral images to the `data/frll_neutral_front` folder. Our [`Makefile`](Makefile) has a rule (`data/frll_neutral_front`) to automate this process. To crop the images, simply use the `standalone/crop-face-images.py` to crop all face images in the directory and save them to `data/frll_neutral_front_cropped`. Note that we also provide a Make rule to automate this, named after the output directory.
+
+* MegaDepth
+The MegaDepth v1 dataset is made available in their [project website](https://www.cs.cornell.edu/projects/megadepth/). There are also rules in our [`Makefile`](Makefile)` to download, crop, and pair the images adequatly. See the `data/megadepth` and `data/megadeth_pairs` rules.
+
+* NeRSemble
+The NeRSemble dataset is available at the [authors' website](https://tobias-kirschstein.github.io/nersemble/). For complete access, you must request it by following the instructions there. Afterwards, ...
+
 ## Citation
 If you find our work useful in your research, consider citing it in your tech report or paper.
 

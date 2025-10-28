@@ -203,7 +203,7 @@ if __name__ == "__main__":
         "--just-crop",
         "-c",
         action="store_true",
-        help="Perform no image" " alignment, just crop the face.",
+        help="Perform no image alignment, just crop the face.",
     )
     parser.add_argument(
         "--output-size",

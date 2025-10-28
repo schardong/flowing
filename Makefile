@@ -18,7 +18,7 @@ data/frll_neutral_front:
 
 data/frll_neutral_front_cropped: data/frll_neutral_front landmark_models/shape_predictor_68_face_landmarks_GTX.dat
 	@echo "Cropping face images"
-	@python standalone/align.py --just-crop --output-size 1350 --n-tasks 4 $< $@
+	@python standalone/crop-face-images.py --just-crop --output-size 1350 --n-tasks 4 $< $@
 	@echo "Face images cropped"
 
 results/001_002-node-good_manual_landmarks/weights.pth: data/frll_neutral_front landmark_models/shape_predictor_68_face_landmarks_GTX.dat

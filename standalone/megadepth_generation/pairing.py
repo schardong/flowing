@@ -63,4 +63,3 @@ for i, row in enumerate(similarity_matrix):
     shutil.copy(os.path.join(INPUT_DIR, filenames[i]), os.path.join(pair_folder, "image1.jpg"))
     shutil.copy(os.path.join(INPUT_DIR, filenames[j]), os.path.join(pair_folder, "image2.jpg"))
     pair_index += 1
-
