@@ -17,7 +17,6 @@ from ifmorph.loss_functions import NeuralODELoss
 from ifmorph.neural_odes import NeuralODE
 from ifmorph.util import (
     create_node_morphing,
-    get_landmark_correspondences,
     get_default_argumentparser,
     get_device,
 )
@@ -86,6 +85,10 @@ def train_warping(experiment_config_path, output_path, args):
             num_samples=config["training"]["n_samples"],
             device=device,
         )
+        reconstruct_config = config["reconstruct"]
+        n_frames = reconstruct_config.get("n_frames", 100)
+        fps = reconstruct_config.get("fps", 10)
+        grid_dims = reconstruct_config.get("frame_dims", (320, 320))
 
     loss_config = config["loss"]
     training_config = config["training"]
@@ -94,11 +97,6 @@ def train_warping(experiment_config_path, output_path, args):
 
     warmup_steps = training_config["n_steps"]
     checkpoint_steps = training_config.get("checkpoint_steps", None)
-    if input_dims == 2:
-        reconstruct_config = config["reconstruct"]
-        n_frames = reconstruct_config.get("n_frames", 100)
-        fps = reconstruct_config.get("fps", 10)
-        grid_dims = reconstruct_config.get("frame_dims", (320, 320))
 
     # ------- creating the correspondences ------- #
     src, tgt = None, None

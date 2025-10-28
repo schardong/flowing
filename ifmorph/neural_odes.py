@@ -99,7 +99,7 @@ class NeuralODE(nn.Module):
             )
         else:
             raise ValueError(
-                f"Unknown internal module: {internal_network_type} for" " NeuralODE"
+                f"Unknown internal module: {internal_network_type} for NeuralODE"
             )
         func = convert_to_fd(func)
         return NeuralODE(func, method=method, autonomous=autonomous)
