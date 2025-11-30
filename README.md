@@ -49,6 +49,7 @@ make data/frll_neutral_front data/frll_neutral_front_cropped
 1. [Python](https://www.python.org/)
 2. [venv](https://docs.python.org/3/library/venv.html) or [PyEnv](https://github.com/pyenv/pyenv)
 3. [Git](https://git-scm.com/download) (or just download a tarball of the repository)
+4. [ImageMagick](https://imagemagick.org) (for the MegaDepth experiments)
 
 Basically, you need Python to run the code, a GPU with GPGPU drivers installed (e.g. CUDA drivers and toolkit on an NVidia GPU). Optionally, you may want to use virtual environments (venv, PyEnv, or Anaconda) to isolate the code, and `git` for version-controlled code. On a POSIX-compliant system, you may want `Make` to automate some parts, but wherever applicable, we provide Python-based alternatives.
 
