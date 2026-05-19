@@ -89,13 +89,15 @@ The NeRSemble dataset is available at the [authors' website](https://tobias-kirs
 If you find our work useful in your research, consider citing it in your tech report or paper.
 
 ```{bibtex}
-@misc{bizzi2025flowing,
-      title={{FLOWING}: Implicit Neural Flows for Structure-Preserving Morphing},
-      author={Arthur Bizzi and Matias Grynberg and Vitor Matias and Daniel Perazzo and João Paulo Lima and Luiz Velho and Nuno Gonçalves and João Pereira and Guilherme Schardong and Tiago Novello},
-      year={2025},
-      eprint={2510.09537},
-      archivePrefix={arXiv},
-      primaryClass={cs.CV},
-      url={https://arxiv.org/abs/2510.09537},
+@inproceedings{bizzi2025flowing,
+ author = {Bizzi, Arthur and Grynberg Portnoy, Matias and Pereira Matias, Vitor and Perazzo, Daniel and Silva do Monte Lima, Jo\~{a}o Paulo and Velho, Luiz and Gon\c{c}alves, Nuno and Pereira, Jo\~{a}o and Schardong, Guilherme and Novello, Tiago},
+ booktitle = {Advances in Neural Information Processing Systems},
+ editor = {D. Belgrave and C. Zhang and H. Lin and R. Pascanu and P. Koniusz and M. Ghassemi and N. Chen},
+ pages = {153041--153065},
+ publisher = {Curran Associates, Inc.},
+ title = {FLOWING: Implicit Neural Flows for Structure-Preserving Morphing},
+ url = {https://proceedings.neurips.cc/paper_files/paper/2025/file/e0c256700465c158de71081b4cf5e8c3-Paper-Conference.pdf},
+ volume = {38},
+ year = {2025}
 }
 ```
