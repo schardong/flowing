@@ -1,3 +1,9 @@
+clean:
+	results/*
+
+nuke: clean
+	rm -Rf data/* landmark_models
+
 landmark_models/shape_predictor_68_face_landmarks_GTX.dat:
 	@echo "Downloading DLib GTX 68 landmarks detection model"
 	@curl --location --remote-header-name --remote-name https://github.com/davisking/dlib-models/raw/master/shape_predictor_68_face_landmarks_GTX.dat.bz2
@@ -34,7 +40,7 @@ results/sandy_frll-002_ncf/weights.pth:
 	@python ncf-warp-train.py --device cuda:0 --no-ui experiments/faces/sandy_frll-002_ncf.yaml
 
 test-lm-detect-parallel: data/frll_neutral_front
-	python standalone/detect-face-landmarks.py data/frll_neutral_front/*.jpg --saveim --plot-landmarks --output-path tmp/detect-face-lms --n-tasks 4
+	@python standalone/detect-face-landmarks.py data/frll_neutral_front/*.jpg --saveim --plot-landmarks --output-path tmp/detect-face-lms --n-tasks 4
 
 data/megadepth_test_1500:
 	@echo "Downloading the MegaDepth dataset"
@@ -63,4 +69,4 @@ data/megadepth_pairs/0022: data/megadepth/0022
 	@python standalone/megadepth_generation/pairing.py 0022
 	@echo "MegaDepth 0022 dataset paired"
 
-.PHONY: test-lm-detect-parallel
+.PHONY: test-lm-detect-parallel clean nuke

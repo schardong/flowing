@@ -26,7 +26,7 @@
 <br>
 [8] University of Georgia (UGA)
 
-This is the official implementation of "FLOWING 🌊: Implicit Neural Flows for Structure-Preserving Morphing", to appear on NeurIPS 2025. Meanwhile, check the [arXiv version](https://arxiv.org/abs/2510.09537). More results and examples in the [project page](https://schardong.github.io/flowing).
+This is the official implementation of "FLOWING 🌊: Implicit Neural Flows for Structure-Preserving Morphing", published in the [proceedings of NeurIPS 2025](https://proceedings.neurips.cc/paper_files/paper/2025/hash/e0c256700465c158de71081b4cf5e8c3-Abstract-Conference.html). There is also an [arXiv version](https://arxiv.org/abs/2510.09537). More results and examples in the [project page](https://schardong.github.io/flowing).
 
 **Note that this repository is not ready yet!**
 
@@ -34,7 +34,7 @@ This is the official implementation of "FLOWING 🌊: Implicit Neural Flows for 
 
 ## Getting started
 
-**TL-DR**:If you just want to run the code, follow the steps below (assuming a UNIX-like system with Make installed). For more details, jump to `Setup and sample run` section.
+**TL-DR**:If you just want to run the code for face warping, follow the steps below (assuming a UNIX-like system with Make installed). For more details, jump to `Setup and sample run` section.
 
 ```{sh}
 python -m venv .venv
@@ -42,7 +42,8 @@ source .venv/bin/activate
 pip install -r requirements.txt
 pip install -e .
 make data/frll_neutral_front data/frll_neutral_front_cropped
-...
+python standalone/mark-warp-points.py --landmark_detector dlib --output experiments/ncf/001_002.yaml data/frll_neutral_front_cropped/001_03.jpg data/frll_neutral_front_cropped/002_03.jpg
+python ncf-warp-train.py experiments/faces/001_002-ncf-good_manual_landmarks.yaml
 ```
 
 ### Prerequisites
@@ -80,7 +81,7 @@ We've employed three datasets for our experiments, two image datasets, and a 3DG
 The FRLL dataset can be obtained in their page on [figshare](https://figshare.com/articles/dataset/Face_Research_Lab_London_Set/5047666/3). Simply download and extract the frontal facing neutral images to the `data/frll_neutral_front` folder. Our [`Makefile`](Makefile) has a rule (`data/frll_neutral_front`) to automate this process. To crop the images, simply use the `standalone/crop-face-images.py` to crop all face images in the directory and save them to `data/frll_neutral_front_cropped`. Note that we also provide a Make rule to automate this, named after the output directory.
 
 * MegaDepth
-The MegaDepth v1 dataset is made available in their [project website](https://www.cs.cornell.edu/projects/megadepth/). There are also rules in our [`Makefile`](Makefile)` to download, crop, and pair the images adequatly. See the `data/megadepth` and `data/megadeth_pairs` rules.
+The MegaDepth v1 dataset is made available in their [project website](https://www.cs.cornell.edu/projects/megadepth/). There are also rules in our [`Makefile`](Makefile) to download, crop, and pair the images adequatly. See the `data/megadepth` and `data/megadeth_pairs` rules.
 
 * NeRSemble
 The NeRSemble dataset is available at the [authors' website](https://tobias-kirschstein.github.io/nersemble/). For complete access, you must request it by following the instructions there. Afterwards, ...
