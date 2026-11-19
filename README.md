@@ -86,6 +86,9 @@ The MegaDepth v1 dataset is made available in their [project website](https://ww
 * NeRSemble
 The NeRSemble dataset is available at the [authors' website](https://tobias-kirschstein.github.io/nersemble/). For complete access, you must request it by following the instructions there. Afterwards, ...
 
+## Acknowlegdments
+This project has received funding from the European Union's Horizon Europe research and innovation programme under Grant Agreement No 101189689.
+
 ## Citation
 If you find our work useful in your research, consider citing it in your tech report or paper.
 
